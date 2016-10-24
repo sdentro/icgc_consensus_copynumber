@@ -539,16 +539,21 @@ create_rounded_copynumber = function(samplename, outdir, method_segmentsfile, me
 #'  - No purity values for Broad included, maybe not needed
 #'  - File paths at the top of the create_rounded_copynumber could be improved, maybe move all the input into an input directory
 
-dkfz_segmentsfile = paste0(samplename, "_dkfz/", samplename, "_segments.txt")
-dkfz_purityfile = paste0(samplename, "_dkfz/puritiesPloidies_20160906.txt")
-vanloowedge_segmentsfile = paste0(samplename, "_vanloowedge/", samplename, "_segments.txt.gz")
-vanloowedge_purityfile = paste0(samplename, "_vanloowedge/", samplename, "_purity_ploidy.txt")
-peifer_segmentsfile = paste0(samplename, "_peifer/", samplename, "_segments.txt")
-peifer_purityfile = paste0(samplename, "_peifer/", samplename, "_purity_ploidy.txt")
-mustonen_segmentsfile = paste0(samplename, "_mustonen/", samplename, ".penalty0.95_segments.txt")
-mustonen_purityfile = paste0(samplename, "_mustonen/", samplename, ".penalty0.95.purity.ploidy.txt")
-broad_segmentsfile = paste0(samplename, "_broad/", samplename, "_segments.txt")
-broad_purityfile = paste0(samplename, "_broad/", samplename, "_purity_ploidy.txt")
+args = commandArgs(T)
+samplename = args[1]
+outdir = args[2]
+
+
+dkfz_segmentsfile = paste0("dkfz/", samplename, "_segments.txt")
+dkfz_purityfile = "purity_ploidy_dkfz.txt"
+vanloowedge_segmentsfile = paste0("vanloowedge/", samplename, "_segments.txt")
+vanloowedge_purityfile = "purity_ploidy_vanloowedge.txt"
+peifer_segmentsfile = paste0("peifer/", samplename, "_segments.txt")
+peifer_purityfile = "purity_ploidy_peifer.txt"
+mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
+mustonen_purityfile = "purity_ploidy_mustonen.txt"
+broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
+broad_purityfile = NA
 
 method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                            vanloowedge=vanloowedge_segmentsfile,
@@ -563,8 +568,8 @@ method_purityfile = list(dkfz=dkfz_purityfile,
                          broad=broad_purityfile)
 
 
-outdir = "output"
-samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+# outdir = "output"
+# samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 create_rounded_copynumber(samplename, outdir, method_segmentsfile, method_purityfile, max.plot.cn=4)
 
 
