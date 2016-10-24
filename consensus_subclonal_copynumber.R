@@ -414,10 +414,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
 #####################################################################
 # Rounded CN main method
 #####################################################################
-create_rounded_copynumber = function(samplename, outdir, method_segmentsfile, method_purityfile, max.plot.cn=4) {
-  
-  breakpoints = read.table(paste0(samplename, "_consensus_breakpoints.txt"), header=T, stringsAsFactors=F)
-  segments = breakpoints2segments(breakpoints)
+create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, max.plot.cn=4) {
   
   res = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile)
   map_dkfz = res$map_dkfz
@@ -570,6 +567,8 @@ method_purityfile = list(dkfz=dkfz_purityfile,
 
 # outdir = "output"
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+breakpoints = read.table(file.path("consensus_bp", paste0(samplename, "_consensus_breakpoints.txt")), header=T, stringsAsFactors=F)
+segments = breakpoints2segments(breakpoints)
 create_rounded_copynumber(samplename, outdir, method_segmentsfile, method_purityfile, max.plot.cn=4)
 
 
