@@ -19,8 +19,13 @@ breakpoints2segments = function(breakpoints) {
   return(segments)
 }
 
-parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cutoff=0.1) {
-  dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
+parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cutoff=0.1, has_header=F) {
+  dat = read.table(segmentsfile, header=F, stringsAsFactors=F)
+  
+  if (!has_header) {
+    colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence")
+  }
+  
   purity = read.table(purityfile, header=F, stringsAsFactors=F)
   dat$ccf = dat$cellular_prevalence / purity[purity$V1==samplename,3]
   
@@ -354,9 +359,9 @@ round_broad = function(map, i) {
   }
 }
 
-parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=F) {
+parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=F, dkfz_has_header=F) {
   
-  dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename)
+  dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, has_header=dkfz_has_header)
   map_dkfz = mapdata(segments, dat_dkfz, is_dkfz=T)
   
   dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename)
