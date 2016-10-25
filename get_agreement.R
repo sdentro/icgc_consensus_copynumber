@@ -35,7 +35,9 @@ get_frac_genome_agree = function(samplename, all_data, segments) {
   map_vanloowedge = all_data$map_vanloowedge
   map_broad = all_data$map_broad
   all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer)
-  combined_status = data.frame(segments, dkfz=map_dkfz$status, mustonen=map_mustonen$status, peifer=map_peifer$status, vanloowedge=map_vanloowedge$status, broad=map_broad$status)
+  # combined_status = data.frame(segments, dkfz=map_dkfz$status, mustonen=map_mustonen$status, peifer=map_peifer$status, vanloowedge=map_vanloowedge$status, broad=map_broad$status)
+  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad)
+  
   
   agree = rep(F, nrow(segments))
   cn_states = list()
@@ -49,14 +51,14 @@ get_frac_genome_agree = function(samplename, all_data, segments) {
       for (j in 1:length(all_maps)) {
         map = all_maps[[j]]
         
-        if (!is.null(map$cn_states[[i]])) {
+        if (!is.na(map) && !is.null(map$cn_states[[i]])) {
           seg = map$cn_states[[i]][[1]]
           inventory = rbind(inventory, data.frame(method=names(all_maps)[j], major_cn=seg$major_cn, minor_cn=seg$minor_cn))
         }
       }
       cn_states[[i]] = inventory
       inventory = na.omit(inventory)
-      agree[i] = all(inventory$major_cn==inventory$major_cn[1]) & all(inventory$minor_cn==inventory$minor_cn[1])
+      agree[i] = all(inventory$major_cn==inventory$major_cn[1]) & all(inventory$minor_cn==inventory$minor_cn[1]) & nrow(inventory)>0
       num_methods[i] = nrow(inventory)
     }
   }
@@ -70,24 +72,32 @@ get_frac_genome_agree = function(samplename, all_data, segments) {
 #####################################################################
 # Original agreement
 #####################################################################
-setwd("~/Documents/Projects/icgc/consensus_subclonal_copynumber/")
+# setwd("~/Documents/Projects/icgc/consensus_subclonal_copynumber/")
 
-outdir = "output"
-samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+source("~/repo/icgc_consensus_copynumber/util.R")
+max.plot.cn=4
 
-breakpoints = read.table(paste0(samplename, "_consensus_breakpoints.txt"), header=T, stringsAsFactors=F)
+
+args = commandArgs(T)
+samplename = args[1]
+outdir = args[2]
+
+# outdir = "output"
+# samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+
+breakpoints = read.table(file.path("consensus_bp", paste0(samplename, ".txt")), header=T, stringsAsFactors=F)
 segments = breakpoints2segments(breakpoints)
 
-dkfz_segmentsfile = paste0(samplename, "_dkfz/", samplename, "_segments.txt")
-dkfz_purityfile = paste0(samplename, "_dkfz/puritiesPloidies_20160906.txt")
-vanloowedge_segmentsfile = paste0(samplename, "_vanloowedge/", samplename, "_segments.txt.gz")
-vanloowedge_purityfile = paste0(samplename, "_vanloowedge/", samplename, "_purity_ploidy.txt")
-peifer_segmentsfile = paste0(samplename, "_peifer/", samplename, "_segments.txt")
-peifer_purityfile = paste0(samplename, "_peifer/", samplename, "_purity_ploidy.txt")
-mustonen_segmentsfile = paste0(samplename, "_mustonen/", samplename, ".penalty0.95_segments.txt")
-mustonen_purityfile = paste0(samplename, "_mustonen/", samplename, ".penalty0.95.purity.ploidy.txt")
-broad_segmentsfile = paste0(samplename, "_broad/", samplename, "_segments.txt")
-broad_purityfile = paste0(samplename, "_broad/", samplename, "_purity_ploidy.txt")
+dkfz_segmentsfile = paste0("dkfz/", samplename, "_segments.txt")
+dkfz_purityfile = "purity_ploidy_dkfz.txt"
+vanloowedge_segmentsfile = paste0("vanloowedge/", samplename, "_segments.txt")
+vanloowedge_purityfile = "purity_ploidy_vanloowedge.txt"
+peifer_segmentsfile = paste0("peifer/", samplename, "_segments.txt")
+peifer_purityfile = "purity_ploidy_peifer.txt"
+mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
+mustonen_purityfile = "purity_ploidy_mustonen.txt"
+broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
+broad_purityfile = NA
 
 method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                            vanloowedge=vanloowedge_segmentsfile,
@@ -185,6 +195,12 @@ create_consensus_profile = function(agreement_clonal, agreement_rounded) {
 
 consensus_profile = create_consensus_profile(agreement_clonal, agreement_rounded)
 
+profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
+p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
+png(file.path(outdir, "figures", paste0(samplename, "_consensus_rounded.png")), height=300, width=1300)
+print(p)
+dev.off()
+
 #####################################################################
 # Calc agreement with both the created consensus per method
 #####################################################################
@@ -197,7 +213,7 @@ calc_method_agreement = function(all_maps, segments, consensus_profile, segment_
     for (j in which(grepl("map", names(all_maps)))) {
       method = gsub("map_", "", names(all_maps)[j])
       
-      if (!is.na(all_maps[[j]]$status[i]) && all_maps[[j]]$status[i]==segment_status) {
+      if (!is.na(all_maps[[j]]) && !is.na(all_maps[[j]]$status[i]) && all_maps[[j]]$status[i]==segment_status) {
         
         # Check if agreement
         method_segment = all_maps[[j]]$cn_states[[i]][[1]]
@@ -240,12 +256,14 @@ update_consensus_profile = function(consensus_profile, rounded_ranking, all_data
       } else {
         
       # The most often agreeing method does not make a call, iterate over the others until we find one
-        for (j in which(grepl("map_", names(res)))) {
-          other_closest_method = res[[j]]$cn_states
-          if (!is.null(other_closest_method[[i]])) {
-            consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
-            consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
-            consensus_profile$star[i] = 4
+        for (j in which(grepl("map_", names(all_data_rounded)))) {
+          if (!is.na(all_data_rounded[[j]])) {
+            other_closest_method = all_data_rounded[[j]]$cn_states
+            if (!is.null(other_closest_method[[i]])) {
+              consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
+              consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
+              consensus_profile$star[i] = 4
+            }
           }
         }
       }
@@ -256,13 +274,45 @@ update_consensus_profile = function(consensus_profile, rounded_ranking, all_data
 
 consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
 consensus_profile = data.frame(segments, consensus_profile)
-write.table(consensus_profile, file=file.path(outdir, paste0(samplename, "_consensus_profile.txt")), quote=F, sep="\t", row.names=F)
+write.table(consensus_profile, file=file.path(outdir, "consensus_profile", paste0(samplename, "_consensus_profile.txt")), quote=F, sep="\t", row.names=F)
 
+profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
+p = plot_profile(profile_bb, "Consensus - after rounding and using best method", max.plot.cn=max.plot.cn)
+png(file.path(outdir, "figures", paste0(samplename, "_consensus_rounded_bestMethod.png")), height=300, width=1300)
+print(p)
+dev.off()
+
+#####################################################################
 # Write some summary stats
-agreement_summary = data.frame(t(frac_agreement_clonal), 
-                                t(names(clonal_ranking)),
-                                t(frac_agreement_rounded),
-                                t(names(rounded_ranking)))
+#####################################################################
+
+get_ploidy = function(segments, map) {
+  if (!is.na(map)) {
+    cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states)
+    return(list(ploidy=calc_ploidy(cn_bb), status=get_ploidy_status(cn_bb)))
+  } else {
+    return(list(ploidy=NA, status=NA))
+  }
+}
+
+ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
+ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad)
+ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
+ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
+ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
+ploidies = data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy,
+                      status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status)
+
+
+agreement_summary = as.data.frame(t(data.frame(
+  c(
+    unlist(frac_agreement_clonal), 
+    unlist(names(clonal_ranking)),
+    unlist(frac_agreement_rounded),
+    unlist(names(rounded_ranking)))
+  )))
+
+
 colnames(agreement_summary) = c(paste0("agree_clonal_", names(frac_agreement_clonal)), 
                                  paste0("rank_clonal_", 1:length(names(clonal_ranking))),
                                  paste0("agree_rounded_", names(frac_agreement_rounded)), 
@@ -281,5 +331,6 @@ summary_data = data.frame(samplename=samplename,
                            has_clonal_aberration=has_clonal_aberration, 
                            has_largish_clonal_aberration=has_largish_clonal_aberration, 
                            has_large_clonal_aberration=has_large_clonal_aberration,
-                           agreement_summary)
-write.table(summary_data, file=file.path(outdir, paste0(samplename, "_summary_stats.txt")), quote=F, sep="\t", row.names=F)
+                           agreement_summary,
+                           ploidies)
+write.table(summary_data, file=file.path(outdir, "summary_stats", paste0(samplename, "_summary_stats.txt")), quote=F, sep="\t", row.names=F)
