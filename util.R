@@ -99,6 +99,12 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     }
     purity = parse_mustonen_purity(purityfile)
     dat$ccf = dat$cellular_prevalence / purity
+    
+    # Apply a few filters to get rid of artifacts
+    dat = dat[!(dat$start==dat$end),]
+    dat = dat[!(dat$chromosome=="14" & dat$start==1 & dat$end < 18000000),]
+    dat = dat[!(dat$chromosome=="15" & dat$start==1 & dat$end < 16000000),]
+    dat = dat[!(dat$chromosome=="21" & dat$start==1 & dat$end < 11000000),]
     return(dat)
   } else {
     return(NA)
