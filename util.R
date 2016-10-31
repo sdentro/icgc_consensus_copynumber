@@ -260,6 +260,11 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           merged_entry$end = temp_segs$end[j]
           merged_temp_segs = rbind(merged_temp_segs, merged_entry)
           merged = T
+        } else if (j==nrow(temp_segs)) {
+          merged_temp_segs = rbind(merged_temp_segs, temp_segs[j-1,])
+          merged_temp_segs = rbind(merged_temp_segs, temp_segs[j,])
+        } else {
+          merged_temp_segs = rbind(merged_temp_segs, temp_segs[j-1,])
         }
       }
       if (merged) {
