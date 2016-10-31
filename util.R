@@ -296,6 +296,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       # No segments overlap 50%
       if (length(overlap)==0 & is_broad) {
         overlap = findOverlaps(cns_gr, bps_gr[i,])
+        overlap_orig = overlap
         
         # Sometimes the next segment just bleeds in, so here remove entries that overlap substantially with the next or previous segment
         if (i < nrow(bp_segments)) {
@@ -310,7 +311,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         
         if (length(overlap)==0) {
           print(bp_segments[i,])
-          print(cn_segments[subjectHits(overlap),])
+          print(cn_segments[subjectHits(overlap_orig),])
           
           stop(paste0("mapdata broad - found multiple clonal segments that overlap, but also with other segments ", i))
         }
