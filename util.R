@@ -236,9 +236,13 @@ asses_dkfz_clonal_status = function(cn_segments, i, dkfz_subclonality_cutoff) {
 #' @return Yields a list with two fields: status (with clonal/subclonal/NA classifications) and cn_states (with the assigned cn states)
 mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff=0.1, is_broad=F) {
   
-  merge_broad_segments = function(cn_segments, overlap) {
+  merge_broad_segments = function(cn_segments, overlap, bp_segment) {
     # Perform merging of clonal segments
     temp_segs = cn_segments[queryHits(overlap),]
+    
+    # Remove small segments that fall completely within the consensus segment - if the consensus segment is large enough
+    is_to_small = (temp_segs$start > bp_segment$start & temp_segs$end < bp_segment$end & (temp_segs$end-temp_segs$start) < 1000000 & (bp_segment$end-bp_segment$start) > 3000000)
+    temp_segs = temp_segs[!is_to_small,]
     
     merged = T
     while (merged & nrow(temp_segs) > 1) {
@@ -246,7 +250,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       merged_temp_segs = data.frame()
       prev = NULL
       for (j in 2:nrow(temp_segs)) {
-        if (temp_segs$minor_cn[j-1]==temp_segs$minor_cn[j] & temp_segs$major_cn[j-1]==temp_segs$major_cn[j]) {
+        if (temp_segs$minor_cn[j-1]==temp_segs$minor_cn[j] & temp_segs$major_cn[j-1]==temp_segs$major_cn[j] & temp_segs$ccf[j]==1 & temp_segs$ccf[j-1]) {
           merged_entry = temp_segs[j-1,]
           merged_entry$end = temp_segs$end[j]
           merged_temp_segs = rbind(merged_temp_segs, merged_entry)
@@ -316,7 +320,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           next
         }
         
-        temp_segs = merge_broad_segments(cn_segments, overlap)
+        temp_segs = merge_broad_segments(cn_segments, overlap, bps_gr[i,,drop=F])
         if (nrow(temp_segs) == 1) {
           status[i] = "clonal"
           cn_states[[i]] = list(temp_segs)
