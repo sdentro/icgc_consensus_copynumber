@@ -298,7 +298,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         overlap = findOverlaps(cns_gr, bps_gr[i,])
         print(i)
         print(bp_segments[i,])
-        print(cn_segments[subjectHits(overlap_orig),])
+        print(cn_segments[subjectHits(overlap),])
         
         # Sometimes the next segment just bleeds in, so here remove entries that overlap substantially with the next or previous segment
         if (i < nrow(bp_segments)) {
