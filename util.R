@@ -179,7 +179,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
   
   dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
   if (!is.na(dat_broad)) {
-    map_broad = mapdata(segments, dat_broad)
+    map_broad = mapdata(segments, dat_broad, is_broad=T)
   } else {
     map_broad = NA
   }
@@ -253,7 +253,9 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           merged = T
         }
       }
-      temp_segs = merged_temp_segs
+      if (merged) {
+        temp_segs = merged_temp_segs
+      }
     }
     return(temp_segs)
   }
@@ -294,6 +296,18 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       # No segments overlap 50%
       if (length(overlap)==0 & is_broad) {
         overlap = findOverlaps(cns_gr, bps_gr[i,])
+        
+        # Sometimes the next segment just bleeds in, so here remove entries that overlap substantially with the next or previous segment
+        if (i < nrow(bp_segments)) {
+          overlap_next = findOverlaps(cns_gr, bps_gr[i+1,], minoverlap=round((bp_segments$end[i+1]-bp_segments$start[i+1])*0.5))
+          overlap = setdiff(overlap, overlap_next)
+        }
+        
+        if (i > 1) {
+          overlap_prev = findOverlaps(cns_gr, bps_gr[i-1,], minoverlap=round((bp_segments$end[i-1]-bp_segments$start[i-1])*0.5))
+          overlap = setdiff(overlap, overlap_prev)
+        }
+        
         temp_segs = merge_broad_segments(cn_segments, overlap)
         
         if (nrow(temp_segs) == 1) {
