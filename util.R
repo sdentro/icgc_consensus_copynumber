@@ -240,7 +240,10 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
   
   merge_broad_segments = function(cn_segments, overlap, bp_segment) {
     # Perform merging of clonal segments
-    temp_segs = cn_segments[queryHits(overlap),]
+    temp_segs = cn_segments[queryHits(overlap),,drop=F]
+    
+    if (nrow(temp_segs)==1) { return(temp_segs) }
+    if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0) > 0) { return(temp_segs) }
     
     # Remove small segments that fall completely within the consensus segment - if the consensus segment is large enough
     is_to_small = (temp_segs$start > bp_segment$start & temp_segs$end < bp_segment$end & (temp_segs$end-temp_segs$start) < 1000000 & (bp_segment$end-bp_segment$start) > 3000000)
