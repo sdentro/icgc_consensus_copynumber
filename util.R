@@ -369,7 +369,7 @@ collapse2bb = function(segments, cn_states, broad=F) {
       new_bb_seg$frac2_A[1] = cn_states_i$ccf[descendant]
       
       cn_bb = rbind(cn_bb, new_bb_seg)
-    } else {
+    } else if (nrow(cn_states_i)>=2 & broad) {
       # Subclonal copy number - more than 2 states
       # TODO: averaging the ancestral with each subclone may be better
       ancestral = which(cn_states_i$ccf==1)
@@ -385,6 +385,8 @@ collapse2bb = function(segments, cn_states, broad=F) {
       new_bb_seg$frac2_A[1] = sum(cn_states_i$ccf[descendant])
       cn_bb = rbind(cn_bb, new_bb_seg)
       # print(paste0("Too many fits, cannot put into data format. segment: ", i))
+    } else {
+      print(paste0("Too many fits, cannot put into data format. segment: ", i))
     }
   }
   return(cn_bb)
