@@ -248,35 +248,19 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
     # Only a single clonal segment left
     if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0) > 0) { return(temp_segs) }
     
-    # # All elements the same state, just merge
-    # if (isTRUE(all.equal(max(temp_segs$major_cn), min(temp_segs$major_cn))) & isTRUE(all.equal(max(temp_segs$minor_cn), min(temp_segs$minor_cn)))) {
-    #   merged_entry = temp_segs[1,]
-    #   merged_entry$end[1] = temp_segs$end[nrow(temp_segs)]
-    #   return(merged_entry)
-    # }
+    # All elements the same state, just merge
+    if (isTRUE(all.equal(max(temp_segs$major_cn), min(temp_segs$major_cn))) & isTRUE(all.equal(max(temp_segs$minor_cn), min(temp_segs$minor_cn)))) {
+      merged_entry = temp_segs[1,,drop=F]
+      merged_entry$end[1] = temp_segs$end[nrow(temp_segs)]
+      return(merged_entry)
+    }
     
     # Remove small segments that fall completely within the consensus segment - if the consensus segment is large enough
     is_to_small = (temp_segs$start > bp_segment$start & temp_segs$end < bp_segment$end & (temp_segs$end-temp_segs$start) < 1000000 & (bp_segment$end-bp_segment$start) > 3000000)
     temp_segs = temp_segs[!is_to_small,]
     
-    print("small")
-    print(is_to_small)
-    print("fist")
-    print(temp_segs$start > bp_segment$start)
-    print("second")
-    print(temp_segs$end < bp_segment$end)
-    print("third")
-    print((temp_segs$end-temp_segs$start) < 1000000)
-    print("fourth")
-    print((bp_segment$end-bp_segment$start) > 3000000)
-    
-    print("starting temp_segs")
-    print(temp_segs)
-    
-    iters = 1
     merged = T
     while (merged & nrow(temp_segs) > 1) {
-      print(paste0("Iter: ", iters))
       merged = F
       merged_temp_segs = data.frame()
       prev = NULL
@@ -297,8 +281,6 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         temp_segs = merged_temp_segs
       }
       iters = iters+1
-      print(merged_temp_segs)
-      print(temp_segs)
     }
     return(temp_segs)
   }
@@ -339,9 +321,6 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       # No segments overlap 50%
       if (length(overlap)==0 & is_broad) {
         overlap = findOverlaps(cns_gr, bps_gr[i,], minoverlap=round((bp_segments$end[i]-bp_segments$start[i])*0.01))
-        print(i)
-        print(bp_segments[i,])
-        print(cn_segments[queryHits(overlap),])
         
         # Sometimes the next segment just bleeds in, so here remove entries that overlap substantially with the next or previous segment
         if (i < nrow(bp_segments) & length(overlap) > 1) {
@@ -359,9 +338,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           next
         }
         
-        print(length(overlap))
         temp_segs = merge_broad_segments(cn_segments, overlap, bp_segments[i,,drop=F])
-        print(temp_segs)
         if (nrow(temp_segs) == 1) {
           status[i] = "clonal"
           cn_states[[i]] = list(temp_segs)
