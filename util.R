@@ -301,7 +301,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       
       # No segments overlap 50%
       if (length(overlap)==0 & is_broad) {
-        overlap = findOverlaps(cns_gr, bps_gr[i,])
+        overlap = findOverlaps(cns_gr, bps_gr[i,], minoverlap=round((bp_segments$end[i]-bp_segments$start[i])*0.01))
         print(i)
         print(bp_segments[i,])
         print(cn_segments[queryHits(overlap),])
