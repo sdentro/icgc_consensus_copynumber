@@ -70,7 +70,11 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
 
 parse_vanloowedge_purity = function(purityfile, samplename) {
   purity = read.table(purityfile, header=T, stringsAsFactors=F)
-  return(purity[purity$sample==samplename,]$purity)
+  purity = unique(purity[purity$sample==samplename,]$purity)
+  if (length(purity) > 1) {
+    print(paste0("parse_vanloowedge_purity - found multiple purities for sample ", samplename))
+  }
+  return(purity)
 }
 
 parse_peifer = function(segmentsfile, purityfile, samplename) {
@@ -88,7 +92,11 @@ parse_peifer = function(segmentsfile, purityfile, samplename) {
 
 parse_peifer_purity = function(purityfile, samplename) {
   purity = read.table(purityfile, header=T, stringsAsFactors=F)
-  return(purity[purity$sample==samplename,]$purity)
+  purity = unique(purity[purity$sample==samplename,]$purity)
+  if (length(purity) > 1) {
+    print(paste0("parse_peifer_purity - found multiple purities for sample ", samplename))
+  }
+  return(purity)
 }
 
 parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
@@ -132,7 +140,11 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
 
 parse_broad_purity = function(purityfile, samplename) {
   purity = read.table(purityfile, header=T, stringsAsFactors=F)
-  return(purity[purity$sample==samplename,]$purity)
+  purity = unique(purity[purity$sample==samplename,]$purity)
+  if (length(purity) > 1) {
+    print(paste0("parse_broad_purity - found multiple purities for sample ", samplename))
+  }
+  return(purity)
 }
 
 parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=F) {
