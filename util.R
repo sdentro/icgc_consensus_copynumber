@@ -102,9 +102,9 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     
     # Apply a few filters to get rid of artifacts
     dat = dat[!(dat$start==dat$end),]
-    dat = dat[!(dat$chromosome=="14" & dat$start==1 & dat$end < 18000000),]
-    dat = dat[!(dat$chromosome=="15" & dat$start==1 & dat$end < 16000000),]
-    dat = dat[!(dat$chromosome=="21" & dat$start==1 & dat$end < 11000000),]
+    dat = dat[!(dat$chromosome=="14" & dat$start==1),]
+    dat = dat[!(dat$chromosome=="15" & dat$start==1),]
+    dat = dat[!(dat$chromosome=="21" & dat$start==1),]
     return(dat)
   } else {
     return(NA)
