@@ -421,9 +421,9 @@ parse_bb_template = function() {
 #####################################################################
 round_vanloo_wedge = function(map, i, purity) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
-    print("VLW")
+    # print("VLW")
     dat = map$cn_states[[i]][[1]]
-    print(dat)
+    # print(dat)
     index_major_clone = which.max(dat$ccf)
     dat = map$cn_states[[i]][[1]][index_major_clone,,drop=F]
     dat$cellular_prevalence = purity
@@ -467,16 +467,22 @@ round_dkfz = function(map, i, purity) {
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
   } else {
-    stop(paste0("DKFZ fit contains multiple states for segment ", i))
+    return(data.frame())
+    print(paste0("DKFZ fit contains multiple states for segment ", i))
   }
 }
 
 round_broad = function(map, i) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
-    print("BROAD")
-    print(dat)
-    dat = dat[dat$historically_clonal==1,,drop=F]
+    # print("BROAD")
+    # print(dat)
+    if (sum(dat$historically_clonal==1)==1) {
+      dat = dat[dat$historically_clonal==1,,drop=F]
+    } else {
+      print("BROAD round - multiple segments, pick largest")
+      dat = dat[which.max(dat$end-dat$start),,drop=F]
+    }
     dat$ccf = 1
     return(dat)
   } else if (is.null(map$cn_states[[i]])) {
