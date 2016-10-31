@@ -323,6 +323,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         }
         
         temp_segs = merge_broad_segments(cn_segments, overlap, bps_gr[i,,drop=F])
+        print(temp_segs)
         if (nrow(temp_segs) == 1) {
           status[i] = "clonal"
           cn_states[[i]] = list(temp_segs)
