@@ -280,7 +280,6 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       if (merged) {
         temp_segs = merged_temp_segs
       }
-      iters = iters+1
     }
     return(temp_segs)
   }
@@ -348,6 +347,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           status[i] = "subclonal"
           cn_states[[i]] = list(temp_segs)
         } else {
+          print(temp_segs)
           stop(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
         }
           
