@@ -356,19 +356,35 @@ collapse2bb = function(segments, cn_states, broad=F) {
       new_bb_seg$frac2_A[1] = cn_states_i$ccf[2]
       cn_bb = rbind(cn_bb, new_bb_seg)
     } else if (nrow(cn_states_i)==2 & broad) {
-      # Subclonal copy number
+      # Subclonal copy number - 2 states only
       ancestral = which(cn_states_i$ccf==1)
       descendant = (1:2)[(1:2)!=ancestral]
       
       new_bb_seg$nMaj1_A[1] = cn_states_i$major_cn[ancestral]
       new_bb_seg$nMin1_A[1] = cn_states_i$minor_cn[ancestral]
       new_bb_seg$frac1_A[1] = cn_states_i$ccf[ancestral] - cn_states_i$ccf[descendant]
+      
       new_bb_seg$nMaj2_A[1] = cn_states_i$major_cn[descendant]
       new_bb_seg$nMin2_A[1] = cn_states_i$minor_cn[descendant]
       new_bb_seg$frac2_A[1] = cn_states_i$ccf[descendant]
+      
       cn_bb = rbind(cn_bb, new_bb_seg)
     } else {
-      print(paste0("Too many fits, cannot put into data format. segment: ", i))
+      # Subclonal copy number - more than 2 states
+      # TODO: averaging the ancestral with each subclone may be better
+      ancestral = which(cn_states_i$ccf==1)
+      descendant = which(cn_states_i$ccf!=1)
+      
+      new_bb_seg$nMaj1_A[1] = cn_states_i$major_cn[ancestral]
+      new_bb_seg$nMin1_A[1] = cn_states_i$minor_cn[ancestral]
+      new_bb_seg$frac1_A[1] = cn_states_i$ccf[ancestral] - sum(cn_states_i$ccf[descendant])
+      
+      # Combine the subclones into a single
+      new_bb_seg$nMaj2_A[1] = sum(sapply(descendant, function(x) cn_states_i$major_cn[x]*cn_states_i$ccf[x]))
+      new_bb_seg$nMin2_A[1] = sum(sapply(descendant, function(x) cn_states_i$minor_cn[x]*cn_states_i$ccf[x]))
+      new_bb_seg$frac2_A[1] = sum(cn_states_i$ccf[descendant])
+      cn_bb = rbind(cn_bb, new_bb_seg)
+      # print(paste0("Too many fits, cannot put into data format. segment: ", i))
     }
   }
   return(cn_bb)
