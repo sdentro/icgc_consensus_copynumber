@@ -249,8 +249,13 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
     is_to_small = (temp_segs$start > bp_segment$start & temp_segs$end < bp_segment$end & (temp_segs$end-temp_segs$start) < 1000000 & (bp_segment$end-bp_segment$start) > 3000000)
     temp_segs = temp_segs[!is_to_small,]
     
+    print("starting temp_segs")
+    print(temp_segs)
+    
+    iters = 1
     merged = T
     while (merged & nrow(temp_segs) > 1) {
+      print(paste0("Iter: ", iters))
       merged = F
       merged_temp_segs = data.frame()
       prev = NULL
@@ -270,6 +275,9 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       if (merged) {
         temp_segs = merged_temp_segs
       }
+      iters = iters+1
+      print(merged_temp_segs)
+      print(temp_segs)
     }
     return(temp_segs)
   }
@@ -330,6 +338,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           next
         }
         
+        print(length(overlap))
         temp_segs = merge_broad_segments(cn_segments, overlap, bps_gr[i,,drop=F])
         print(temp_segs)
         if (nrow(temp_segs) == 1) {
