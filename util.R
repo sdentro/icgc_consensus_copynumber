@@ -234,10 +234,34 @@ asses_dkfz_clonal_status = function(cn_segments, i, dkfz_subclonality_cutoff) {
 
 #' Map reported cn segments to the given bp segments
 #' @return Yields a list with two fields: status (with clonal/subclonal/NA classifications) and cn_states (with the assigned cn states)
-mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff=0.1) {
+mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff=0.1, is_broad=F) {
+  
+  merge_broad_segments = function(cn_segments, overlap) {
+    # Perform merging of clonal segments
+    temp_segs = cn_segments[queryHits(overlap),]
+    
+    merged = T
+    while (merged & nrow(temp_segs) > 1) {
+      merged = F
+      merged_temp_segs = data.frame()
+      prev = NULL
+      for (j in 2:nrow(temp_segs)) {
+        if (temp_segs$minor_cn[j-1]==temp_segs$minor_cn[j] & temp_segs$major_cn[j-1]==temp_segs$major_cn[j]) {
+          merged_entry = temp_segs[j-1,]
+          merged_entry$end = temp_segs$end[j]
+          merged_temp_segs = rbind(merged_temp_segs, merged_entry)
+          merged = T
+        }
+      }
+      temp_segs = merged_temp_segs
+    }
+    return(temp_segs)
+  }
+  
+  
   bps_gr = makeGRangesFromDataFrame(bp_segments)
   cns_gr = makeGRangesFromDataFrame(cn_segments, keep.extra.columns=T)
-  overlap = findOverlaps(cns_gr, bps_gr)
+  # overlap = findOverlaps(cns_gr, bps_gr)
   
   status = rep(NA, length(bps_gr))
   cn_states = list()
@@ -250,7 +274,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
     if (length(overlap)==0) {
       next
       
-      # One segment overlaps, but could be subclonal in DKFZ output
+    # One segment overlaps, but could be subclonal in DKFZ output
     } else if (length(overlap)==1) {
       
       if (is_dkfz) {
@@ -268,9 +292,25 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       overlap = findOverlaps(cns_gr, bps_gr[i,], minoverlap=round((bp_segments$end[i]-bp_segments$start[i])*0.5))
       
       # No segments overlap 50%
-      if (length(overlap)==0) {
+      if (length(overlap)==0 & is_broad) {
         overlap = findOverlaps(cns_gr, bps_gr[i,])
+        temp_segs = merge_broad_segments(cn_segments, overlap)
         
+        if (nrow(temp_segs) == 1) {
+          status[i] = "clonal"
+          cn_states[[i]] = list(cn_segments[queryHits(overlap),])
+          next # skip the rest of the loop as it attempts to store the unmerged segments
+        } else if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0)>=1) {
+          # Subclonality is encoded as one historical and at least one not state
+          status[i] = "clonal"
+          cn_states[[i]] = list(cn_segments[queryHits(overlap),])
+        } else {
+          stop(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
+        }
+          
+        
+      # No segments overlap 50% - other pipelines
+      } else if (length(overlap)==0) {
         # In this case the cn segment is smaller than the breakpoint given segment
         # find the breakpoint segment that overlaps with 95% of the given cn segment and make that mapping
         segment_overlaps_bp = round(cn_segments$end[queryHits(overlap)]-cn_segments$start[queryHits(overlap)])
