@@ -421,7 +421,9 @@ parse_bb_template = function() {
 #####################################################################
 round_vanloo_wedge = function(map, i, purity) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
+    print("VLW")
     dat = map$cn_states[[i]][[1]]
+    print(dat)
     index_major_clone = which.max(dat$ccf)
     dat = map$cn_states[[i]][[1]][index_major_clone,,drop=F]
     dat$cellular_prevalence = purity
@@ -460,7 +462,7 @@ round_dkfz = function(map, i, purity) {
     temp$major_cn = round(temp$major_cn)
     temp$copy_number = temp$minor_cn + temp$major_cn
     temp$cellular_prevalence = purity
-    temp$ccf[1] = 1
+    temp$ccf = 1
     return(temp)
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
@@ -472,8 +474,10 @@ round_dkfz = function(map, i, purity) {
 round_broad = function(map, i) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
+    print("BROAD")
+    print(dat)
     dat = dat[dat$historically_clonal==1,,drop=F]
-    dat$ccf[1] = 1
+    dat$ccf = 1
     return(dat)
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
