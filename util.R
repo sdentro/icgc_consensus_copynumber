@@ -23,8 +23,8 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     
-    purity = read.table(purityfile, header=F, stringsAsFactors=F)
-    dat$ccf = dat$cellular_prevalence / purity[purity$V1==samplename,4]
+    purity = parse_dkfz_purity(purityfile, samplename)
+    dat$ccf = dat$cellular_prevalence / purity
     
     # If the CN does not deviate from an integer by a supplied cutoff the segment should be considered clonal. Here we round those values that are supposedly clonal
     cn_deviation = abs(dat$copy_number-round(dat$copy_number))
@@ -47,14 +47,19 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
   }
 }
 
+parse_dkfz_purity = function(purityfile, samplename) {
+  purity = read.table(purityfile, header=F, stringsAsFactors=F)
+  return(purity[purity$V1==samplename,4])
+}
+
 parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
-    purity = read.table(purityfile, header=T, stringsAsFactors=F)
+    purity = parse_vanloowedge_purity(purityfile, samplename)
     if ("clonal_frequency" %in% colnames(dat)) {
-      dat$ccf = dat$clonal_frequency / purity[purity$sample==samplename,]$purity
+      dat$ccf = dat$clonal_frequency / purity
     } else {
-      dat$ccf = dat$cellular_prevalence / purity[purity$sample==samplename,]$purity
+      dat$ccf = dat$cellular_prevalence / purity
     }
     colnames(dat)[7] = "cellular_prevalence"
     return(dat)
@@ -63,16 +68,27 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
   }
 }
 
+parse_vanloowedge_purity = function(purityfile, samplename) {
+  purity = read.table(purityfile, header=T, stringsAsFactors=F)
+  return(purity[purity$sample==samplename,]$purity)
+}
+
 parse_peifer = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
-    purity = read.table(purityfile, header=T, stringsAsFactors=F)
+    purity = parse_peifer_purity(purityfile, samplename)
+    # What should be CP is encoded as CCF
     dat$ccf = dat$cellular_prevalence
-    dat$cellular_prevalence = dat$ccf * purity[purity$sample==samplename,]$purity
+    dat$cellular_prevalence = dat$ccf * purity
     return(dat)
   } else {
     return(NA)
   }
+}
+
+parse_peifer_purity = function(purityfile, samplename) {
+  purity = read.table(purityfile, header=T, stringsAsFactors=F)
+  return(purity[purity$sample==samplename,]$purity)
 }
 
 parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
@@ -81,12 +97,16 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     if (!has_header) {
       colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence")
     }
-    purity = read.table(purityfile, header=F, stringsAsFactors=F)
-    dat$ccf = dat$cellular_prevalence / purity[1,2]
+    purity = parse_mustonen_purity(purityfile)
+    dat$ccf = dat$cellular_prevalence / purity
     return(dat)
   } else {
     return(NA)
   }
+}
+
+parse_mustonen_purity = function(purityfile) {
+  return(read.table(purityfile, header=F, stringsAsFactors=F)[1,2])
 }
 
 parse_broad = function(segmentsfile, purityfile, samplename) {
@@ -101,6 +121,11 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
   } else {
     return(NA)
   }
+}
+
+parse_broad_purity = function(purityfile, samplename) {
+  purity = read.table(purityfile, header=T, stringsAsFactors=F)
+  return(purity[purity$sample==samplename,]$purity)
 }
 
 parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=F) {
@@ -145,6 +170,15 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
               dat_peifer=dat_peifer, map_peifer=map_peifer,
               dat_mustonen=dat_mustonen, map_mustonen=map_mustonen,
               dat_broad=dat_broad, map_broad=map_broad))
+}
+
+parse_all_purities = function(samplename, method_purityfile) {
+  purity_broad = parse_broad_purity(method_purityfile[["broad"]], samplename)
+  purity_dkfz = parse_dkfz_purity(method_purityfile[["dkfz"]], samplename)
+  purity_mustonen = parse_mustonen_purity(method_purityfile[["mustonen"]])
+  purity_peifer = parse_peifer_purity(method_purityfile[["peifer"]], samplename)
+  purity_vanloowedge = parse_vanloowedge_purity(method_purityfile[["vanloowedge"]], samplename)
+  return(list(broad=purity_broad, dkfz=purity_dkfz, mustonen=purity_mustonen, peifer=purity_peifer, vanloowedge=purity_vanloowedge))
 }
 
 parse_dummy_cn_profile = function(nmaj=-1, nmin=-1) {
@@ -378,11 +412,14 @@ parse_bb_template = function() {
 #####################################################################
 # Round subclonal CNAs
 #####################################################################
-round_vanloo_wedge = function(map, i) {
+round_vanloo_wedge = function(map, i, purity) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
     index_major_clone = which.max(dat$ccf)
-    return(map$cn_states[[i]][[1]][index_major_clone,,drop=F])
+    dat = map$cn_states[[i]][[1]][index_major_clone,,drop=F]
+    dat$cellular_prevalence = purity
+    dat$ccf = 1
+    return(dat)
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
   } else {
@@ -390,11 +427,14 @@ round_vanloo_wedge = function(map, i) {
   }
 }
 
-round_peifer = function(map, i) {
+round_peifer = function(map, i, purity) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
     index_major_clone = which.max(dat$ccf)
-    return(map$cn_states[[i]][[1]][index_major_clone,,drop=F])
+    dat = map$cn_states[[i]][[1]][index_major_clone,,drop=F]
+    dat$cellular_prevalence = purity
+    dat$ccf = 1
+    return(dat)
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
   } else {
@@ -406,12 +446,14 @@ round_mustonen = function(map, i) {
   return(map$cn_states[[i]][[1]][1,,drop=F])
 }
 
-round_dkfz = function(map, i) {
+round_dkfz = function(map, i, purity) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) == 1) {
     temp = map$cn_states[[i]][[1]]
     temp$minor_cn = round(temp$minor_cn)
     temp$major_cn = round(temp$major_cn)
     temp$copy_number = temp$minor_cn + temp$major_cn
+    temp$cellular_prevalence = purity
+    temp$ccf[1] = 1
     return(temp)
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
@@ -421,12 +463,11 @@ round_dkfz = function(map, i) {
 }
 
 round_broad = function(map, i) {
-  if (is.na(map)) {
-    dat = parse_bb_template()[1,,drop=F]
-    dat$n
-  } else if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
+  if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
-    return(dat[dat$historically_clonal==1,,drop=F])
+    dat = dat[dat$historically_clonal==1,,drop=F]
+    dat$ccf[1] = 1
+    return(dat)
   } else if (is.null(map$cn_states[[i]])) {
     return(data.frame())
   } else {
@@ -477,16 +518,20 @@ calc_ploidy = function(subclones) {
   return(ploidy)
 }
 
-get_ploidy_status = function(subclones) {
+get_ploidy_status = function(subclones, min_frac_genome_state=0.2) {
   seg_length = (subclones$endpos/1000)-(subclones$startpos/1000)
   is_clonal = is.na(subclones$frac2_A)
   dipl = subclones$nMin1_A==1 & subclones$nMin1_A==1
   tetrpl = subclones$nMin1_A==2 & subclones$nMin1_A==2
+  dipl_frac_genome = seg_length[subclones$nMin1_A==1 & subclones$nMin1_A==1] / sum(seg_length)
+  tetrpl_frac_genome = seg_length[subclones$nMin1_A==2 & subclones$nMin1_A==2] / sum(seg_length)
   
-  if (sum(seg_length[dipl & is_clonal], na.rm=T) >= sum(seg_length[tetrpl & is_clonal], na.rm=T)) {
+  if (sum(seg_length[dipl & is_clonal], na.rm=T) >= sum(seg_length[tetrpl & is_clonal], na.rm=T) & dipl_frac_genome > min_frac_genome_state) {
     status = "diploid"
-  } else {
+  } else if (tetrpl_frac_genome > min_frac_genome_state) {
     status = "tetraploid"
+  } else {
+    status = "other"
   }
   return(status)
 }

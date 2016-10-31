@@ -13,6 +13,13 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   map_vanloowedge = res$map_vanloowedge
   map_broad = res$map_broad
   
+  res = parse_all_purities(samplename, method_purityfile)
+  purity_dkfz = res$dkfz
+  purity_vanloowedge = res$vanloowedge
+  purity_broad = res$broad
+  purity_peifer = res$peifer
+  purity_mustonen = res$mustonen
+  
   combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad)
   
   #####################################################################
@@ -100,10 +107,9 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   #####################################################################
   # Make rounded clonal copy number
   #####################################################################
-  print("Looking at segments")
+  print("Rounding segments")
   rounded_clonal = list(broad=data.frame(), dkfz=data.frame(), vanloowedge=data.frame(), peifer=data.frame(), mustonen=data.frame())
   for (i in 1:nrow(segments)) {
-    # TODO: at the moment this does not reset the CP/CCFs
 
     if (!is.na(map_broad) && length(map_broad$cn_states) >= i) {
       rounded_clonal$broad = rbind(rounded_clonal$broad, round_broad(map_broad, i))
@@ -114,7 +120,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     }
     
     if (!is.na(map_vanloowedge) && length(map_vanloowedge$cn_states) >= i) {
-      rounded_clonal$vanloowedge = rbind(rounded_clonal$vanloowedge, round_vanloo_wedge(map_vanloowedge, i))
+      rounded_clonal$vanloowedge = rbind(rounded_clonal$vanloowedge, round_vanloo_wedge(map_vanloowedge, i, purity_vanloowedge))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       colnames(temp_entry)[7] = "cellular_prevalence"
@@ -123,7 +129,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     }
 
     if (!is.na(map_peifer) && length(map_peifer$cn_states) >= i) {
-      rounded_clonal$peifer = rbind(rounded_clonal$peifer, round_peifer(map_peifer, i))
+      rounded_clonal$peifer = rbind(rounded_clonal$peifer, round_peifer(map_peifer, i, purity_peifer))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       colnames(temp_entry)[7] = "cellular_prevalence"
@@ -141,7 +147,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     }
 
     if (!is.na(map_dkfz) && length(map_dkfz$cn_states) >= i) {
-      rounded_clonal$dkfz = rbind(rounded_clonal$dkfz, round_dkfz(map_dkfz, i))
+      rounded_clonal$dkfz = rbind(rounded_clonal$dkfz, round_dkfz(map_dkfz, i, purity_dkfz))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       colnames(temp_entry)[7] = "cellular_prevalence"
@@ -202,8 +208,6 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
 # Script
 #####################################################################
 #' TODO
-#'  - CP/CCF is not reset
-#'  - No purity values for Broad included, maybe not needed
 #'  - File paths at the top of the create_rounded_copynumber could be improved, maybe move all the input into an input directory
 
 args = commandArgs(T)
@@ -224,7 +228,7 @@ peifer_purityfile = "purity_ploidy_peifer.txt"
 mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
 mustonen_purityfile = "purity_ploidy_mustonen.txt"
 broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
-broad_purityfile = NA
+broad_purityfile = "purity_ploidy_broad.txt"
 
 method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                            vanloowedge=vanloowedge_segmentsfile,
@@ -241,6 +245,8 @@ method_purityfile = list(dkfz=dkfz_purityfile,
 
 # outdir = "output"
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+# samplename = "0b811c6a-8f05-44bd-ac33-fb720d189e71"
+# breakpoints_file = file.path("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/complete_run/consensus_bp", paste0(samplename, ".txt"))
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 if (file.exists(breakpoints_file)) {
   breakpoints = read.table(breakpoints_file, header=T, stringsAsFactors=F)
