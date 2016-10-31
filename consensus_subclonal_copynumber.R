@@ -110,7 +110,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   print("Rounding segments")
   rounded_clonal = list(broad=data.frame(), dkfz=data.frame(), vanloowedge=data.frame(), peifer=data.frame(), mustonen=data.frame())
   for (i in 1:nrow(segments)) {
-
+    
     if (!is.na(map_broad) && length(map_broad$cn_states) >= i) {
       rounded_clonal$broad = rbind(rounded_clonal$broad, round_broad(map_broad, i))
     } else {
