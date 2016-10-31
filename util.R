@@ -298,12 +298,12 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         
         if (nrow(temp_segs) == 1) {
           status[i] = "clonal"
-          cn_states[[i]] = list(cn_segments[queryHits(overlap),])
+          cn_states[[i]] = list(temp_segs)
           next # skip the rest of the loop as it attempts to store the unmerged segments
         } else if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0)>=1) {
           # Subclonality is encoded as one historical and at least one not state
-          status[i] = "clonal"
-          cn_states[[i]] = list(cn_segments[queryHits(overlap),])
+          status[i] = "subclonal"
+          cn_states[[i]] = list(temp_segs)
         } else {
           stop(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
         }
