@@ -127,6 +127,8 @@ parse_mustonen_purity = function(purityfile) {
 parse_broad = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
+    # Offset the start by 1 to make sure it does not overlap with the previous segment
+    dat$start = dat$start+1
     #' Data already in CCF supplied, no need to convert
     # colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "ccf")
     # purity = read.table(purityfile, header=F, stringsAsFactors=F)
