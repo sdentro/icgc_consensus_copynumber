@@ -307,12 +307,12 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         print(cn_segments[queryHits(overlap),])
         
         # Sometimes the next segment just bleeds in, so here remove entries that overlap substantially with the next or previous segment
-        if (i < nrow(bp_segments)) {
+        if (i < nrow(bp_segments) & nrow(overlap) > 1) {
           overlap_next = findOverlaps(cns_gr, bps_gr[i+1,], minoverlap=round((bp_segments$end[i+1]-bp_segments$start[i+1])*0.8))
           overlap = setdiff(overlap, overlap_next)
         }
         
-        if (i > 1) {
+        if (i > 1 & nrow(overlap) > 1) {
           overlap_prev = findOverlaps(cns_gr, bps_gr[i-1,], minoverlap=round((bp_segments$end[i-1]-bp_segments$start[i-1])*0.8))
           overlap = setdiff(overlap, overlap_prev)
         }
