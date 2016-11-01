@@ -422,7 +422,7 @@ collapse2bb = function(segments, cn_states, broad=F) {
   bb_template = parse_bb_template()
   cn_bb = data.frame()
   for (i in 1:length(cn_states)) {
-    
+
     new_bb_seg = bb_template
     new_bb_seg$chr[1] = segments$chromosome[i]
     new_bb_seg$startpos[1] = segments$start[i]
@@ -658,11 +658,11 @@ calc_ploidy = function(subclones) {
 
 get_ploidy_status = function(subclones, min_frac_genome_state=0.2) {
   seg_length = (subclones$endpos/1000)-(subclones$startpos/1000)
-  is_clonal = is.na(subclones$frac2_A)
+  is_clonal = is.na(subclones$frac2_A) & !is.na(subclones$nMaj1_A)
   dipl = subclones$nMin1_A==1 & subclones$nMin1_A==1
   tetrpl = subclones$nMin1_A==2 & subclones$nMin1_A==2
-  dipl_frac_genome = seg_length[subclones$nMin1_A==1 & subclones$nMin1_A==1] / sum(seg_length)
-  tetrpl_frac_genome = seg_length[subclones$nMin1_A==2 & subclones$nMin1_A==2] / sum(seg_length)
+  dipl_frac_genome = sum(seg_length[subclones$nMin1_A==1 & subclones$nMin1_A==1], na.rm=T) / sum(seg_length)
+  tetrpl_frac_genome = sum(seg_length[subclones$nMin1_A==2 & subclones$nMin1_A==2], na.rm=T) / sum(seg_length)
   
   if (sum(seg_length[dipl & is_clonal], na.rm=T) >= sum(seg_length[tetrpl & is_clonal], na.rm=T) & dipl_frac_genome > min_frac_genome_state) {
     status = "diploid"

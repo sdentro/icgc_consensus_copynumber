@@ -445,9 +445,9 @@ if (file.exists(breakpoints_file)) {
   
   save.image(file.path(outdir, "saves", paste0(samplename, "_agreement_save.RData")))
   
-  get_ploidy = function(segments, map) {
+  get_ploidy = function(segments, map, broad=F) {
     if (!is.na(map)) {
-      cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states)
+      cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
       return(list(ploidy=calc_ploidy(cn_bb), status=get_ploidy_status(cn_bb)))
     } else {
       return(list(ploidy=NA, status=NA))
@@ -463,7 +463,7 @@ if (file.exists(breakpoints_file)) {
   purities = data.frame(purity_dkfz=purity_dkfz, purity_vanloowedge=purity_vanloowedge, purity_peifer=purity_peifer, purity_mustonen=purity_mustonen, purity_broad=purity_broad)
   
   ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
-  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad)
+  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T)
   ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
   ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
