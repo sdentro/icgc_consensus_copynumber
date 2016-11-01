@@ -508,8 +508,10 @@ if (file.exists(breakpoints_file)) {
   
   summary_data = data.frame(samplename=samplename, 
                             overruling,
-                            agreement_clonal=agreement_clonal$frac_agree[,2], 
-                            agreement_rounded=agreement_rounded$frac_agree[,2], 
+                            agreement_level_a=agreement_clonal$frac_agree[,2], 
+                            agreement_level_b=agreement_clonal_overrule$frac_agree[,2], 
+                            agreement_level_c=agreement_rounded$frac_agree[,2], 
+                            agreement_level_d=agreement_rounded_majority_vote$frac_agree[,2], 
                             has_clonal_aberration=has_clonal_aberration, 
                             has_largish_clonal_aberration=has_largish_clonal_aberration, 
                             has_large_clonal_aberration=has_large_clonal_aberration,
