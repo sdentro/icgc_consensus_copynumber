@@ -242,19 +242,20 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
     # Perform merging of clonal segments
     temp_segs = cn_segments[queryHits(overlap),,drop=F]
     
-    # Only a single segment left
+    # Case 1: Only a single segment left
     if (nrow(temp_segs)==1) { return(temp_segs) }
     
-    # Only a single clonal segment left
+    # Case 2: Only a single clonal segment left
     if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0) > 0) { return(temp_segs) }
     
-    # All elements the same state, just merge
+    # Case 3: All elements the same state, just merge
     if (isTRUE(all.equal(max(temp_segs$major_cn), min(temp_segs$major_cn))) & isTRUE(all.equal(max(temp_segs$minor_cn), min(temp_segs$minor_cn)))) {
       merged_entry = temp_segs[1,,drop=F]
       merged_entry$end[1] = temp_segs$end[nrow(temp_segs)]
       return(merged_entry)
     }
     
+    # Case 4: Attempt to merge after removing small segments that fall within the consensus segment
     # Remove small segments that fall completely within the consensus segment - if the consensus segment is large enough
     is_to_small = (temp_segs$start > bp_segment$start & temp_segs$end < bp_segment$end & (temp_segs$end-temp_segs$start) < 1000000 & (bp_segment$end-bp_segment$start) > 3000000)
     temp_segs = temp_segs[!is_to_small,]
@@ -266,14 +267,17 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       prev = NULL
       for (j in 2:nrow(temp_segs)) {
         if (temp_segs$minor_cn[j-1]==temp_segs$minor_cn[j] & temp_segs$major_cn[j-1]==temp_segs$major_cn[j] & temp_segs$ccf[j]==1 & temp_segs$ccf[j-1]) {
+          # Can merge as major/minor states the same
           merged_entry = temp_segs[j-1,]
           merged_entry$end = temp_segs$end[j]
           merged_temp_segs = rbind(merged_temp_segs, merged_entry)
           merged = T
         } else if (j==nrow(temp_segs)) {
+          # Last step and cannot merge the final segment, so add the last two segments to complete
           merged_temp_segs = rbind(merged_temp_segs, temp_segs[j-1,])
           merged_temp_segs = rbind(merged_temp_segs, temp_segs[j,])
         } else {
+          # No merging done, just add one segment
           merged_temp_segs = rbind(merged_temp_segs, temp_segs[j-1,])
         }
       }
@@ -319,15 +323,19 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       
       # No segments overlap 50%
       if (length(overlap)==0 & is_broad) {
+        # Get segments that overlap at least 1% of the consensus segment to get rid of those that overlap just one bp
         overlap = findOverlaps(cns_gr, bps_gr[i,], minoverlap=round((bp_segments$end[i]-bp_segments$start[i])*0.01))
         
         # Sometimes the next segment just bleeds in, so here remove entries that overlap substantially with the next or previous segment
+        # This is not ideal as it may be that this segment was merged with the next and we're removing legit signal here. However there must
+        # be more than one segment aligning
         if (i < nrow(bp_segments) & length(overlap) > 1) {
           overlap_next = findOverlaps(cns_gr, bps_gr[i+1,], minoverlap=round((bp_segments$end[i+1]-bp_segments$start[i+1])*0.8))
           overlap = setdiff(overlap, overlap_next)
         }
         
         if (i > 1 & length(overlap) > 1) {
+          # Remove segments that substantially overlap with the previous segment
           overlap_prev = findOverlaps(cns_gr, bps_gr[i-1,], minoverlap=round((bp_segments$end[i-1]-bp_segments$start[i-1])*0.8))
           overlap = setdiff(overlap, overlap_prev)
         }
@@ -349,7 +357,8 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         } else {
           print(bp_segments[i,])
           print(temp_segs)
-          stop(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
+          print(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
+          next
         }
           
         
