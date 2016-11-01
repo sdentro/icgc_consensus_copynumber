@@ -492,11 +492,19 @@ if (file.exists(breakpoints_file)) {
   has_largish_clonal_aberration = any((consensus_profile$major_cn!=1 | consensus_profile$minor_cn!=1)[seg_lengths > 10])
   has_large_clonal_aberration = any((consensus_profile$major_cn!=1 | consensus_profile$minor_cn!=1)[seg_lengths > 50])
   
-  overruling = data.frame(exclude_broad=ifelse(!is.na(method_overruled), method_overruled$broad, FALSE),
-                          exclude_mustonen=ifelse(!is.na(method_overruled), method_overruled$mustonen, FALSE),
-                          exclude_dkfz=ifelse(!is.na(method_overruled), method_overruled$dkfz, FALSE),
-                          exclude_peifer=ifelse(!is.na(method_overruled), method_overruled$peifer, FALSE),
-                          exclude_vanloowedge=ifelse(!is.na(method_overruled), method_overruled$vanloowedge, FALSE))
+  if (is.na(method_overruled)) {
+    overruling = data.frame(exclude_broad=FALSE,
+                            exclude_mustonen=FALSE,
+                            exclude_dkfz=FALSE,
+                            exclude_peifer=FALSE,
+                            exclude_vanloowedge=FALSE)
+  } else {
+    overruling = data.frame(exclude_broad=method_overruled$broad,
+                            exclude_mustonen=method_overruled$mustonen,
+                            exclude_dkfz=method_overruled$dkfz,
+                            exclude_peifer=method_overruled$peifer,
+                            exclude_vanloowedge=method_overruled$vanloowedge)
+  }
   
   summary_data = data.frame(samplename=samplename, 
                             overruling,
