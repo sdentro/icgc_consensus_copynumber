@@ -14,7 +14,7 @@ breakpoints2segments = function(breakpoints) {
     breakpoints_chrom = breakpoints[selection,]
     
     segments = rbind(segments, 
-                     data.frame(chromosome=chrom, start=breakpoints_chrom$position[1:(nrow(breakpoints_chrom)-1)], end=breakpoints_chrom$position[2:nrow(breakpoints_chrom)]))
+                     data.frame(chromosome=chrom, start=breakpoints_chrom$position[1:(nrow(breakpoints_chrom)-1)], end=breakpoints_chrom$position[2:nrow(breakpoints_chrom)]-1))
   }
   return(segments)
 }
@@ -104,6 +104,8 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     dat = read.table(segmentsfile, header=has_header, stringsAsFactors=F)
     if (!has_header) {
       colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence")
+      # Add 1 so that segments do not overlap
+      dat$end = dat$end - 1
     }
     purity = parse_mustonen_purity(purityfile)
     dat$ccf = dat$cellular_prevalence / purity
@@ -128,7 +130,7 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     # Offset the start by 1 to make sure it does not overlap with the previous segment
-    dat$start = dat$start+1
+    dat$end = dat$end - 1
     #' Data already in CCF supplied, no need to convert
     # colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "ccf")
     # purity = read.table(purityfile, header=F, stringsAsFactors=F)
