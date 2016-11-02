@@ -73,7 +73,7 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_wit
         
         if (!is.na(map) && length(map$cn_states) >= i && !is.null(map$cn_states[[i]])) {
           method_name = gsub("map_", "", names(all_maps)[j])
-          if (!is.na(method_overruled) & method_name %in% names(combined_status)[methods_with_result]) {
+          if (method_name %in% names(combined_status)[methods_with_result]) {
             seg = map$cn_states[[i]][[1]]
             inventory = rbind(inventory, data.frame(method=gsub("map_", "", names(all_maps)[j]), major_cn=seg$major_cn, minor_cn=seg$minor_cn))
           }
@@ -327,12 +327,11 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Piece together a complete agreement profile
   #####################################################################
-  create_consensus_profile = function(agreement_clonal, agreement_rounded) {
+  create_consensus_profile = function(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     for (i in 1:length(r)) {
-      
-      # TODO bugfix : Error in if (agreement_clonal$agree[i]) { : argument is of length zero - f82d213f-bc99-5b1d-e040-11ac0c486880
+
       if (agreement_clonal$agree[i]) {
         # if clonal agree, choose that and assign 1*
         new_entry = agreement_clonal$cn_states[[i]][1,2:3]
@@ -370,7 +369,7 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   
-  consensus_profile = create_consensus_profile(agreement_clonal, agreement_rounded)
+  consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote)
   
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
