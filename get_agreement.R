@@ -385,6 +385,7 @@ if (file.exists(breakpoints_file)) {
     agreement = list(dkfz=0, vanloowedge=0, peifer=0, mustonen=0, broad=0)
     # collect_mustonen_2 = c()
     for (i in 1:nrow(consensus_profile)) {
+
       # Iterate over all the segment mappings
       for (j in which(grepl("map", names(all_maps)))) {
         method = gsub("map_", "", names(all_maps)[j])

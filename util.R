@@ -145,6 +145,7 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     # Offset the start by 1 to make sure it does not overlap with the previous segment
     dat$end = dat$end - 1
+    dat = dat[!is.na(dat$copy_number) & !is.na(dat$major_cn) & !is.na(dat$minor_cn),]
     #' Data already in CCF supplied, no need to convert
     # colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "ccf")
     # purity = read.table(purityfile, header=F, stringsAsFactors=F)
