@@ -49,7 +49,11 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
 
 parse_dkfz_purity = function(purityfile, samplename) {
   purity = read.table(purityfile, header=F, stringsAsFactors=F)
-  return(purity[purity$V1==samplename,4])
+  purity = purity[purity$V1==samplename,4]
+  if (length(purity)==0) {
+    purity = NA
+  }
+  return(purity)
 }
 
 parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
@@ -74,6 +78,9 @@ parse_vanloowedge_purity = function(purityfile, samplename) {
   if (length(purity) > 1) {
     print(paste0("parse_vanloowedge_purity - found multiple purities for sample ", samplename))
   }
+  if (length(purity)==0) {
+    purity = NA
+  }
   return(purity)
 }
 
@@ -95,6 +102,9 @@ parse_peifer_purity = function(purityfile, samplename) {
   purity = unique(purity[purity$sample==samplename,]$purity)
   if (length(purity) > 1) {
     print(paste0("parse_peifer_purity - found multiple purities for sample ", samplename))
+  }
+  if (length(purity)==0) {
+    purity = NA
   }
   return(purity)
 }
@@ -123,7 +133,11 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
 }
 
 parse_mustonen_purity = function(purityfile) {
-  return(read.table(purityfile, header=F, stringsAsFactors=F)[1,2])
+  purity = read.table(purityfile, header=F, stringsAsFactors=F)[1,2]
+  if (length(purity)==0) {
+    purity = NA
+  }
+  return(purity)
 }
 
 parse_broad = function(segmentsfile, purityfile, samplename) {
@@ -147,6 +161,9 @@ parse_broad_purity = function(purityfile, samplename) {
   purity = unique(purity[purity$sample==samplename,]$purity)
   if (length(purity) > 1) {
     print(paste0("parse_broad_purity - found multiple purities for sample ", samplename))
+  }
+  if (length(purity)==0) {
+    purity = NA
   }
   return(purity)
 }
