@@ -436,7 +436,7 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Building initial consensus profile...")
-  consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr)
+  consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, all_data_clonal$map_broad_baflogr, all_data_clonal$map_vanloowedge_baflogr)
   
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
