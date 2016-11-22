@@ -237,7 +237,7 @@ breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 if (file.exists(breakpoints_file)) {
   breakpoints = read.table(breakpoints_file, header=T, stringsAsFactors=F)
   segments = breakpoints2segments(breakpoints)
-  create_rounded_copynumber(samplename, segments, outdir, method_segmentsfile, method_purityfile, max.plot.cn=4)
+  create_rounded_copynumber(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4)
 }
 
 q(save="no")
