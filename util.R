@@ -169,7 +169,7 @@ parse_broad_purity = function(purityfile, samplename) {
   return(purity)
 }
 
-parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=F) {
+parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F) {
   
   dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename)
   if (!is.na(dat_dkfz)) {
@@ -206,11 +206,22 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
     map_broad = NA
   }
   
+  if (!is.null(method_baflogr)) {
+    baflogr_vanloowedge = read.table(method_baflogr$vanloowedge, header=T, stringsAsFactors=F)
+    map_vanloowedge_baflogr = mapdata(segments, baflogr_vanloowedge)
+    baflogr_broad = read.table(method_baflogr$broad, header=T, stringsAsFactors=F)
+    map_broad_baflogr = mapdata(segments, baflogr_broad)
+  } else {
+    map_vanloowedge_baflogr = NA
+    map_broad_baflogr = NA
+  }
+  
   return(list(dat_dkfz=dat_dkfz, map_dkfz=map_dkfz,
               dat_vanloowedge=dat_vanloowedge, map_vanloowedge=map_vanloowedge,
               dat_peifer=dat_peifer, map_peifer=map_peifer,
               dat_mustonen=dat_mustonen, map_mustonen=map_mustonen,
-              dat_broad=dat_broad, map_broad=map_broad))
+              dat_broad=dat_broad, map_broad=map_broad,
+              map_vanloowedge_baflogr=map_vanloowedge_baflogr, map_broad_baflogr=map_broad_baflogr))
 }
 
 parse_all_purities = function(samplename, method_purityfile) {

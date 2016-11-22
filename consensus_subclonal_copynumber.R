@@ -4,9 +4,12 @@ source("~/repo/icgc_consensus_copynumber/util.R")
 #####################################################################
 # Rounded CN main method
 #####################################################################
-create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, max.plot.cn=4) {
+create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4) {
   
-  res = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile)
+  #####################################################################
+  # Read in and map all the raw data
+  #####################################################################
+  res = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr)
   map_dkfz = res$map_dkfz
   map_mustonen = res$map_mustonen
   map_peifer = res$map_peifer
@@ -58,45 +61,23 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   # Make plots
   #####################################################################
   print("Making figures")
-  print("Battenberg")
-  if (!is.na(map_vanloowedge)) {
-    cn_bb_vanloowedge = collapse2bb(segments=segments, cn_states=map_vanloowedge$cn_states)
-  } else {
-    cn_bb_vanloowedge = parse_dummy_cn_profile()
-  }
-  plot_vanloowedge = plot_profile(cn_bb_vanloowedge, "Battenberg", max.plot.cn=max.plot.cn)
   
-  print("ABSOLUTE")
-  if (!is.na(map_broad)) {
-    cn_bb_broad = collapse2bb(segments=segments, cn_states=map_broad$cn_states, broad=T)
-  } else {
-    cn_bb_broad = parse_dummy_cn_profile()
+  make_plot = function(mapping, segments, plot_title, max.plot.cn) {
+    print(plot_title)
+    if (!is.na(mapping)) {
+      cn_bb = collapse2bb(segments=segments, cn_states=mapping$cn_states)
+    } else {
+      cn_bb = parse_dummy_cn_profile()
+    }
+    plot = plot_profile(cn_bb, plot_title, max.plot.cn=max.plot.cn)
+    return(plot)
   }
-  plot_broad = plot_profile(cn_bb_broad, "ABSOLUTE", max.plot.cn=max.plot.cn)
   
-  print("ACEseq")
-  if (!is.na(map_dkfz)) {
-    cn_bb_dkfz = collapse2bb(segments=segments, cn_states=map_dkfz$cn_states)
-  } else {
-    cn_bb_dkfz = parse_dummy_cn_profile()
-  }
-  plot_dkfz = plot_profile(cn_bb_dkfz, "ACEseq", max.plot.cn=max.plot.cn)
-  
-  print("CloneHD")
-  if (!is.na(map_mustonen)) {
-    cn_bb_mustonen = collapse2bb(segments=segments, cn_states=map_mustonen$cn_states)
-  } else {
-    cn_bb_mustonen = parse_dummy_cn_profile()
-  }
-  plot_mustonen = plot_profile(cn_bb_mustonen, "CloneHD", max.plot.cn=max.plot.cn)
-  
-  print("Sclust")
-  if (!is.na(map_peifer)) {
-    cn_bb_peifer = collapse2bb(segments=segments, cn_states=map_peifer$cn_states)
-  } else {
-    cn_bb_peifer = parse_dummy_cn_profile()
-  }
-  plot_peifer = plot_profile(cn_bb_peifer, "Sclust", max.plot.cn=max.plot.cn)
+  plot_vanloowedge = make_plot(map_vanloowedge, segments, "Battenberg", max.plot.cn)
+  plot_broad = make_plot(map_broad, segments, "ABSOLUTE", max.plot.cn)
+  plot_dkfz = make_plot(map_dkfz, segments, "ACEseq", max.plot.cn)
+  plot_mustonen = make_plot(map_mustonen, segments, "CloneHD", max.plot.cn)
+  plot_peifer = make_plot(map_peifer, segments, "Sclust", max.plot.cn)
   print("Done plot profile")
   
   png(file.path(outdir, "figures", paste0(samplename, "_copynumber_complete.png")), height=1500, width=1300)
@@ -214,6 +195,7 @@ args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
 
+# setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # setwd("/nfs/users/nfs_c/cgppipe/pancancer/workspace/sd11/icgc_pancan_full/consensus_copynumber/2016_09_consensus_breakpoints_fullruns/20161024_rounding/")
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 # outdir = "output"
@@ -229,6 +211,8 @@ mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.t
 mustonen_purityfile = "purity_ploidy_mustonen.txt"
 broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
 broad_purityfile = "purity_ploidy_broad.txt"
+vanloowedge_baflogrfile = paste0("vanloowedge_baflogr/", samplename, "_baflogr.txt")
+broad_baflogrfile = paste0("broad_baflogr/", samplename, "_baflogr.txt")
 
 method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                            vanloowedge=vanloowedge_segmentsfile,
@@ -242,6 +226,8 @@ method_purityfile = list(dkfz=dkfz_purityfile,
                          mustonen=mustonen_purityfile,
                          broad=broad_purityfile)
 
+method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
+                      broad=broad_baflogrfile)
 
 # outdir = "output"
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"

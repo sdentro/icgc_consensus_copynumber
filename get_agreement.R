@@ -245,6 +245,8 @@ if (file.exists(breakpoints_file)) {
   mustonen_purityfile = "purity_ploidy_mustonen.txt"
   broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
   broad_purityfile = "purity_ploidy_broad.txt"
+  vanloowedge_baflogrfile = paste0("vanloowedge_baflogr/", samplename, "_baflogr.txt")
+  broad_baflogrfile = paste0("broad_baflogr/", samplename, "_baflogr.txt")
   
   method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                              vanloowedge=vanloowedge_segmentsfile,
@@ -258,7 +260,10 @@ if (file.exists(breakpoints_file)) {
                            mustonen=mustonen_purityfile,
                            broad=broad_purityfile)
   
-  all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=F)
+  method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
+                        broad=broad_baflogrfile)
+  
+  all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F)
   agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments)
   
   #####################################################################
@@ -287,7 +292,7 @@ if (file.exists(breakpoints_file)) {
                              mustonen=mustonen_segmentsfile,
                              broad=broad_segmentsfile)
   
-  all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=T)
+  all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=T)
   agreement_rounded = get_frac_genome_agree(samplename, all_data_rounded, segments, method_overruled=method_overruled)
   
   #####################################################################
@@ -327,7 +332,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Piece together a complete agreement profile
   #####################################################################
-  create_consensus_profile = function(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote) {
+  create_consensus_profile = function(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     for (i in 1:length(r)) {
@@ -364,12 +369,29 @@ if (file.exists(breakpoints_file)) {
         new_entry$level = "e"
       }
       
+      
+      if (!is.null(map_broad_baflogr$cn_states[[i]])) {
+        new_entry$broad_baf = map_broad_baflogr$cn_states[[i]][[1]][1,4]
+        new_entry$broad_logr = map_broad_baflogr$cn_states[[i]][[1]][1,5]
+      } else {
+        new_entry$broad_baf = NA
+        new_entry$broad_logr = NA
+      }
+      
+      if (!is.null(map_vanloowedge_baflogr$cn_states[[i]])) {
+        new_entry$vanloowedge_baf = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,4]
+        new_entry$vanloowedge_logr = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,5]
+      } else {
+        new_entry$vanloowedge_baf = NA
+        new_entry$vanloowedge_logr = NA
+      }
+      
       consensus_profile = rbind(consensus_profile, new_entry)
     }
     return(consensus_profile)
   }
   
-  consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote)
+  consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr)
   
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
@@ -491,7 +513,9 @@ if (file.exists(breakpoints_file)) {
   ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
   ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
-  ploidies = data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy,
+  ploidy_consensus = calc_ploidy(profile_bb)
+  
+  ploidies = data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_consensus=ploidy_consensus,
                         status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status)
   
   
