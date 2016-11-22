@@ -270,6 +270,8 @@ if (nrow(overrulings_pivot)==1 & sum(!is.na(overrulings_pivot)) > 1) {
 }
 
 if (file.exists(breakpoints_file)) {
+  print("Reading in and mapping data...")
+  
   breakpoints = read.table(file.path("consensus_bp", paste0(samplename, ".txt")), header=T, stringsAsFactors=F)
   segments = breakpoints2segments(breakpoints)
   
@@ -302,11 +304,14 @@ if (file.exists(breakpoints_file)) {
                         broad=broad_baflogrfile)
   
   all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F)
+  
+  print("Getting clonal agreement...")
   agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments)
   
   #####################################################################
   # Agreement after excluding overruled profiles
   #####################################################################
+  print("Getting exclude overruled agreement...")
   # Check that there is an entry and that there is at least one method overruled
   if (nrow(overrulings_pivot)==1 & sum(!is.na(overrulings_pivot)) > 1) {
     agreement_clonal_overrule = get_frac_genome_agree(samplename, all_data_clonal, segments, method_overruled=method_overruled)
@@ -318,6 +323,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Agreement after rounding
   #####################################################################
+  print("Getting rounded agreement...")
   dkfz_segmentsfile = file.path(outdir, "dkfz_rounded_clonal", paste0(samplename, "_segments.txt"))
   vanloowedge_segmentsfile = file.path(outdir, "vanloowedge_rounded_clonal", paste0(samplename, "_segments.txt"))
   peifer_segmentsfile = file.path(outdir, "peifer_rounded_clonal", paste0(samplename, "_segments.txt"))
@@ -336,6 +342,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Agreement with accepting majority vote
   #####################################################################
+  print("Getting majority vote agreement...")
   agreement_rounded_majority_vote = get_frac_genome_agree_maj_vote(samplename, all_data_rounded, segments, method_overruled=method_overruled)
   
   #####################################################################
@@ -428,7 +435,7 @@ if (file.exists(breakpoints_file)) {
     }
     return(consensus_profile)
   }
-  
+  print("Building initial consensus profile...")
   consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr)
   
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
@@ -469,7 +476,7 @@ if (file.exists(breakpoints_file)) {
     frac_agreement = lapply(agreement, function(x) x / genome_size)
     return(frac_agreement)
   }
-  
+  print("Calculating method agreements with profile so far...")
   frac_agreement_clonal = calc_method_agreement(all_data_clonal, segments, consensus_profile, "clonal")
   clonal_ranking = sort(unlist(frac_agreement_clonal), decreasing=T)
   
@@ -511,7 +518,7 @@ if (file.exists(breakpoints_file)) {
     }
     return(consensus_profile)
   }
-  
+  print("Filling in remaining segments with best method...")
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
   consensus_profile = data.frame(segments, consensus_profile)
   write.table(consensus_profile, file=file.path(outdir, "consensus_profile", paste0(samplename, "_consensus_profile.txt")), quote=F, sep="\t", row.names=F)
@@ -537,7 +544,7 @@ if (file.exists(breakpoints_file)) {
       return(list(ploidy=NA, status=NA))
     }
   }
-  
+  print("Building summary stats file...")
   res = parse_all_purities(samplename, method_purityfile)
   purity_dkfz = res$dkfz
   purity_vanloowedge = res$vanloowedge
