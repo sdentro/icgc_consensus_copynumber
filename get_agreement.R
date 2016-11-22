@@ -202,6 +202,44 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
   return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, cn_states=cn_states))
 }
 
+test_purities = function(purities, consensus_profile) {
+  
+  # rBacktransform = function(rho, nA, nB, psi) {
+  #   return(gamma_param*log((rho*(nA+nB)+(1-rho)*2)/((1-rho)*2+rho*psi),2))
+  # }
+  
+  bBacktransform = function(rho, nA, nB) {
+    return((1-rho+rho*nB)/(2-2*rho+rho*(nA+nB)))
+  }
+  
+  # Calculates a confidence in the scale of 0-100 with 100 being best. Deviation from the expected baf is literally rescaled to this range. 
+  # Would normally expect confidence values in the high 90s for clonal aberrations
+  bConf = function(btsm, b) {
+    return(ifelse(btsm!=0.5, pmin(100, pmax(0, ifelse(b==0.5, 100, 100*(1-abs(btsm-b)/abs(b-0.5))))), NA))
+  }
+  
+  
+  # Test all star 3 segments
+  star3_segments = which(consensus_profile$star==3 & !is.na(consensus_profile$major_cn) & !is.na(consensus_profile$minor_cn))
+  if (length(star3_segments)==0) {
+    return(NA)
+  } 
+
+  # Calc expected baf given the fit and purity and calculate the confidence
+  bhat = do.call(cbind, lapply(purities[1,], function(purity) { 1-bBacktransform(purity, consensus_profile$major_cn[star3_segments], consensus_profile$minor_cn[star3_segments]) }))
+  bConf_vlw = do.call(cbind, lapply(1:ncol(bhat), function(i) { bConf(bhat[,i], consensus_profile$vanloowedge_baf[star3_segments]) }))
+  bConf_broad = do.call(cbind, lapply(1:ncol(bhat), function(i) { bConf(bhat[,i], consensus_profile$broad_baf[star3_segments]) }))
+  
+  output = matrix(NA, 1, ncol(bConf_vlw)*2)
+  output[1,] = c(apply(bConf_vlw, 2, median, na.rm=T), apply(bConf_broad, 2, median, na.rm=T))
+  output = as.data.frame(output)
+  method_names = unlist(lapply(colnames(purities), function(x) unlist(strsplit(x, "_"))[2]))
+  colnames(output) = c(paste(method_names, "bafConfVanloowedge", sep="_"),
+                       paste(method_names, "bafConfBroad", sep="_"))
+  output$numsegments_bafConf = length(star3_segments)
+  return(output)
+}
+
 #####################################################################
 # Original agreement
 #####################################################################
@@ -409,7 +447,7 @@ if (file.exists(breakpoints_file)) {
     for (i in 1:nrow(consensus_profile)) {
 
       # Iterate over all the segment mappings
-      for (j in which(grepl("map", names(all_maps)))) {
+      for (j in which(grepl("map", names(all_maps)) & !grepl("baflogr", names(all_maps)))) {
         method = gsub("map_", "", names(all_maps)[j])
         
         if (!is.na(all_maps[[j]]) && !is.na(all_maps[[j]]$status[i]) && all_maps[[j]]$status[i]==segment_status) {
@@ -508,6 +546,8 @@ if (file.exists(breakpoints_file)) {
   purity_mustonen = res$mustonen
   purities = data.frame(purity_dkfz=purity_dkfz, purity_vanloowedge=purity_vanloowedge, purity_peifer=purity_peifer, purity_mustonen=purity_mustonen, purity_broad=purity_broad)
   
+  purities_tested = test_purities(purities, consensus_profile)
+  
   ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
   ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T)
   ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
@@ -565,7 +605,8 @@ if (file.exists(breakpoints_file)) {
                             has_large_clonal_aberration=has_large_clonal_aberration,
                             agreement_summary,
                             purities,
-                            ploidies)
+                            ploidies,
+                            purities_tested)
   write.table(summary_data, file=file.path(outdir, "summary_stats", paste0(samplename, "_summary_stats.txt")), quote=F, sep="\t", row.names=F)
 } else {
   print("No breakpoints file found")
