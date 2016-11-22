@@ -227,8 +227,8 @@ test_purities = function(purities, consensus_profile) {
 
   # Calc expected baf given the fit and purity and calculate the confidence
   bhat = do.call(cbind, lapply(purities[1,], function(purity) { 1-bBacktransform(purity, consensus_profile$major_cn[star3_segments], consensus_profile$minor_cn[star3_segments]) }))
-  bConf_vlw = do.call(cbind, lapply(1:ncol(bhat), function(i) { bConf(bhat[,i], consensus_profile$vanloowedge_baf[star3_segments]) }))
-  bConf_broad = do.call(cbind, lapply(1:ncol(bhat), function(i) { bConf(bhat[,i], consensus_profile$broad_baf[star3_segments]) }))
+  bConf_vlw = do.call(cbind, lapply(1:ncol(bhat), function(i) { round(bConf(bhat[,i], consensus_profile$vanloowedge_baf[star3_segments]), 4) }))
+  bConf_broad = do.call(cbind, lapply(1:ncol(bhat), function(i) { round(bConf(bhat[,i], consensus_profile$broad_baf[star3_segments]), 4) }))
   
   output = matrix(NA, 1, ncol(bConf_vlw)*2)
   output[1,] = c(apply(bConf_vlw, 2, median, na.rm=T), apply(bConf_broad, 2, median, na.rm=T))
@@ -539,7 +539,7 @@ if (file.exists(breakpoints_file)) {
   get_ploidy = function(segments, map, broad=F) {
     if (!is.na(map)) {
       cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
-      return(list(ploidy=calc_ploidy(cn_bb), status=get_ploidy_status(cn_bb)))
+      return(list(ploidy=round(calc_ploidy(cn_bb), 4), status=get_ploidy_status(cn_bb)))
     } else {
       return(list(ploidy=NA, status=NA))
     }
@@ -568,9 +568,9 @@ if (file.exists(breakpoints_file)) {
   
   agreement_summary = as.data.frame(t(data.frame(
     c(
-      unlist(frac_agreement_clonal), 
+      round(unlist(frac_agreement_clonal),4), 
       unlist(names(clonal_ranking)),
-      unlist(frac_agreement_rounded),
+      round(unlist(frac_agreement_rounded),4),
       unlist(names(rounded_ranking)))
     )))
   

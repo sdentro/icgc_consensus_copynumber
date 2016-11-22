@@ -1,8 +1,8 @@
-library(GenomicRanges)
-library(gtools)
-library(ggplot2)
-library(grid)
-library(gridExtra)
+suppressPackageStartupMessages(library(GenomicRanges))
+suppressPackageStartupMessages(library(gtools))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(grid))
+suppressPackageStartupMessages(library(gridExtra))
 
 # Static for plot
 RECT_HEIGHT = 0.15
