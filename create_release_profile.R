@@ -41,13 +41,15 @@ combine_all_annotations = function(all_annotations, overrulings_pivot) {
     print("Found too many annotations for some segments from Battenberg")
   }
   
-  if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-    # anno_broad = do.call(rbind, lapply(all_annotations$map_broad$cn_states, function(x) x[[1]]))
-    anno_broad = do.call(rbind, padd_empty_entries(all_annotations$map_broad, "ABSOLUTE"))
-    anno_broad = anno_broad[,c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")]
-    colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
-  } else {
-    print("Found too many annotations for some segments from ABSOLUTE")
+  if (!is.null(all_annotations$map_broad$cn_states)) {
+    if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+      # anno_broad = do.call(rbind, lapply(all_annotations$map_broad$cn_states, function(x) x[[1]]))
+      anno_broad = do.call(rbind, padd_empty_entries(all_annotations$map_broad, "ABSOLUTE"))
+      anno_broad = anno_broad[,c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")]
+      colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
+    } else {
+      print("Found too many annotations for some segments from ABSOLUTE")
+    }
   }
   
   if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
