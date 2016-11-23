@@ -24,8 +24,10 @@ padd_empty_entries = function(map, methodname) {
 }
 
 reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
-  if (nrow(overrulings_pivot) > 0 & !is.na(overrulings_pivot[1, methodid])) {
-    anno[1:nrow(anno), 1:ncol(anno)] = NA
+  if (nrow(overrulings_pivot) > 0) {
+    if (!is.na(overrulings_pivot[1, methodid])) {
+      anno[1:nrow(anno), 1:ncol(anno)] = NA
+    }
   }
   return(anno)
 }
