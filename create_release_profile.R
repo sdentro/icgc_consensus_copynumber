@@ -23,8 +23,14 @@ padd_empty_entries = function(map, methodname) {
   return(cn_states)
 }
 
+reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
+  if (nrow(overrulings_pivot) > 0 & !is.na(overrulings_pivot[1, methodid])) {
+    anno[1:nrow(anno), 1:ncol(anno)] = NA
+  }
+  return(anno)
+}
 
-combine_all_annotations = function(all_annotations) {
+combine_all_annotations = function(all_annotations, overrulings_pivot) {
   if (all(unlist(lapply(all_annotations$map_vanloowedge$cn_states, function(x) nrow(x[[1]]))) == 1)) {
     anno_vanloowedge = do.call(rbind, padd_empty_entries(all_annotations$map_vanloowedge, "Battenberg"))
     anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
@@ -69,6 +75,14 @@ combine_all_annotations = function(all_annotations) {
   } else {
     print("Found too many annotations for some segments from Sclust")
   }
+  
+  # Check for whether a method has been overruled and reset annotations if needed
+  anno_broad = reset_overruled_annotations(anno_broad, overrulings_pivot, "broad")
+  anno_dkfz = reset_overruled_annotations(anno_dkfz, overrulings_pivot, "dkfz")
+  anno_vanloowedge = reset_overruled_annotations(anno_vanloowedge, overrulings_pivot, "vanloo_wedge")
+  anno_mustonen = reset_overruled_annotations(anno_mustonen, overrulings_pivot, "mustonen")
+  anno_peifer = reset_overruled_annotations(anno_peifer, overrulings_pivot, "peifer")
+  
   return(data.frame(anno_broad, anno_dkfz, anno_vanloowedge, anno_mustonen, anno_peifer))
 }
 
@@ -81,9 +95,9 @@ samplename = args[1]
 outdir = args[2]
 
 cons_profile_file = file.path("output/consensus_profile", paste0(samplename, "_consensus_profile.txt"))
-
-# Load and map the annotations
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
+overrulings_pivot = readr::read_tsv("manual_review_overrulings_pivot_table.txt")
+overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
 
 if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   print("Reading in and mapping data...")
