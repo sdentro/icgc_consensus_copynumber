@@ -133,7 +133,7 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   dat = dat[, c("chromosome", "start", "end", "total_cn", "major_cn", "minor_cn", "star", "level")]
   
   # Map the annotations against the loaded consensus profile
-  all_annotations = parse_all_profiles(samplename, dat, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=F)  
+  all_annotations = parse_all_profiles(samplename, dat, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=F, round_dkfz=F)  
   combined_annotations = combine_all_annotations(all_annotations)
   
   # PCAWG11 profile with full annotations

@@ -19,7 +19,7 @@ breakpoints2segments = function(breakpoints) {
   return(segments)
 }
 
-parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cutoff=0.1) {
+parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cutoff=0.1, perform_rounding=T) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     
@@ -36,7 +36,7 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     # Make an inventory
     below_subclonal_threshold = cn_deviation <= dkfz_subclonality_cutoff & major_deviation <= dkfz_subclonality_cutoff & minor_deviation <= dkfz_subclonality_cutoff
     # Round where appropriate
-    if (any(below_subclonal_threshold)) {
+    if (perform_rounding & any(below_subclonal_threshold)) {
       dat$major_cn[below_subclonal_threshold] = round(dat$major_cn[below_subclonal_threshold])
       dat$minor_cn[below_subclonal_threshold] = round(dat$minor_cn[below_subclonal_threshold])
       dat$copy_number[below_subclonal_threshold] = dat$major_cn[below_subclonal_threshold] + dat$minor_cn[below_subclonal_threshold]
@@ -180,9 +180,9 @@ parse_broad_purity = function(purityfile, samplename) {
   return(purity)
 }
 
-parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F) {
+parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, round_dkfz=T) {
   
-  dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename)
+  dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=round_dkfz)
   if (!is.na(dat_dkfz)) {
     map_dkfz = mapdata(segments, dat_dkfz, is_dkfz=T)
   } else {
