@@ -32,7 +32,7 @@ reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
   return(anno)
 }
 
-combine_all_annotations = function(all_annotations, overrulings_pivot) {
+combine_all_annotations = function(all_annotations, overrulings_pivot, num_segments) {
   if (all(unlist(lapply(all_annotations$map_vanloowedge$cn_states, function(x) nrow(x[[1]]))) == 1)) {
     anno_vanloowedge = do.call(rbind, padd_empty_entries(all_annotations$map_vanloowedge, "Battenberg"))
     anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
@@ -41,7 +41,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot) {
     print("Found too many annotations for some segments from Battenberg")
   }
   
-  if (!is.null(all_annotations$map_broad$cn_states)) {
+  if (!is.na(all_annotations$map_broad)) {
     if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       # anno_broad = do.call(rbind, lapply(all_annotations$map_broad$cn_states, function(x) x[[1]]))
       anno_broad = do.call(rbind, padd_empty_entries(all_annotations$map_broad, "ABSOLUTE"))
@@ -50,6 +50,10 @@ combine_all_annotations = function(all_annotations, overrulings_pivot) {
     } else {
       print("Found too many annotations for some segments from ABSOLUTE")
     }
+  } else {
+    anno_broad = data.frame(matrix(NA, num_segments, 4))
+    colnames(anno_broad) = c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")
+    colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
   }
   
   if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
