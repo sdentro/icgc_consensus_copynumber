@@ -62,10 +62,13 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
     purity = parse_vanloowedge_purity(purityfile, samplename)
     if ("clonal_frequency" %in% colnames(dat)) {
       dat$ccf = dat$clonal_frequency / purity
-    } else {
+      colnames(dat)[7] = "cellular_prevalence"
+    } else if ("cellular_prevalence" %in% colnames(dat)) {
       dat$ccf = dat$cellular_prevalence / purity
+      colnames(dat)[7] = "cellular_prevalence"
+    } else {
+      # Annotations don't need any adjustments
     }
-    colnames(dat)[7] = "cellular_prevalence"
     return(dat)
   } else {
     return(NA)
@@ -87,10 +90,14 @@ parse_vanloowedge_purity = function(purityfile, samplename) {
 parse_peifer = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
-    purity = parse_peifer_purity(purityfile, samplename)
-    # What should be CP is encoded as CCF
-    dat$ccf = dat$cellular_prevalence
-    dat$cellular_prevalence = dat$ccf * purity
+    if ("cellular_prevalence" %in% colnames(dat)) {
+      purity = parse_peifer_purity(purityfile, samplename)
+      # What should be CP is encoded as CCF
+      dat$ccf = dat$cellular_prevalence
+      dat$cellular_prevalence = dat$ccf * purity
+    } else {
+      # Annotations don't need any adjustments
+    }
     return(dat)
   } else {
     return(NA)
@@ -144,8 +151,12 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     # Offset the start by 1 to make sure it does not overlap with the previous segment
-    dat$end = dat$end - 1
-    dat = dat[!is.na(dat$copy_number) & !is.na(dat$major_cn) & !is.na(dat$minor_cn),]
+    if ("ccf" %in% colnames(dat)) {
+      dat$end = dat$end - 1
+      dat = dat[!is.na(dat$copy_number) & !is.na(dat$major_cn) & !is.na(dat$minor_cn),]
+    } else {
+      # Annotations don't need any adustments
+    }
     #' Data already in CCF supplied, no need to convert
     # colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "ccf")
     # purity = read.table(purityfile, header=F, stringsAsFactors=F)
