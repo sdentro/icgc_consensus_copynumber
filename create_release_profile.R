@@ -134,7 +134,7 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   
   # Map the annotations against the loaded consensus profile
   all_annotations = parse_all_profiles(samplename, dat, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=F, round_dkfz=F)  
-  combined_annotations = combine_all_annotations(all_annotations)
+  combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot)
   
   # PCAWG11 profile with full annotations
   dat = data.frame(dat, combined_annotations)
