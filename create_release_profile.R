@@ -111,7 +111,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   # Check for whether a method has been overruled and reset annotations if needed
   anno_broad = reset_overruled_annotations(anno_broad, overrulings_pivot, "broad")
   anno_dkfz = reset_overruled_annotations(anno_dkfz, overrulings_pivot, "dkfz")
-  anno_vanloowedge = reset_overruled_annotations(anno_vanloowedge, overrulings_pivot, "vanloo_wedge")
+  anno_vanloowedge = reset_overruled_annotations(anno_vanloowedge, overrulings_pivot, "vanloowedge")
   anno_mustonen = reset_overruled_annotations(anno_mustonen, overrulings_pivot, "mustonen")
   anno_peifer = reset_overruled_annotations(anno_peifer, overrulings_pivot, "peifer")
   
