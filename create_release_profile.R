@@ -33,12 +33,18 @@ reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
 }
 
 combine_all_annotations = function(all_annotations, overrulings_pivot, num_segments) {
-  if (all(unlist(lapply(all_annotations$map_vanloowedge$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-    anno_vanloowedge = do.call(rbind, padd_empty_entries(all_annotations$map_vanloowedge, "Battenberg"))
-    anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
-    colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
+  if (!is.na(all_annotations$map_vanloowedge)) {
+    if (all(unlist(lapply(all_annotations$map_vanloowedge$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+      anno_vanloowedge = do.call(rbind, padd_empty_entries(all_annotations$map_vanloowedge, "Battenberg"))
+      anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
+      colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
+    } else {
+      print("Found too many annotations for some segments from Battenberg")
+    }
   } else {
-    print("Found too many annotations for some segments from Battenberg")
+    anno_vanloowedge = data.frame(matrix(NA, num_segments, 10))
+    colnames(anno_vanloowedge) = c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")
+    colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
   }
   
   if (!is.na(all_annotations$map_broad)) {
@@ -56,32 +62,50 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
   }
   
-  if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-    # anno_dkfz = do.call(rbind, lapply(all_annotations$map_dkfz$cn_states, function(x) x[[1]]))
-    anno_dkfz = do.call(rbind, padd_empty_entries(all_annotations$map_dkfz, "ACEseq"))
-    anno_dkfz = anno_dkfz[,c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")]
+  if (!is.na(all_annotations$map_dkfz)) {
+    if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+      # anno_dkfz = do.call(rbind, lapply(all_annotations$map_dkfz$cn_states, function(x) x[[1]]))
+      anno_dkfz = do.call(rbind, padd_empty_entries(all_annotations$map_dkfz, "ACEseq"))
+      anno_dkfz = anno_dkfz[,c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")]
+      colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
+    } else {
+      print("Found too many annotations for some segments from ACEseq")
+    }
+  } else {
+    anno_dkfz = data.frame(matrix(NA, num_segments, 6))
+    colnames(anno_dkfz) = c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")
     colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
-  } else {
-    print("Found too many annotations for some segments from ACEseq")
   }
   
-  if (all(unlist(lapply(all_annotations$map_mustonen$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-    # anno_mustonen = do.call(rbind, lapply(all_annotations$map_mustonen$cn_states, function(x) x[[1]]))
-    anno_mustonen = do.call(rbind, padd_empty_entries(all_annotations$map_mustonen, "CloneHD"))
-    anno_mustonen = anno_mustonen[,c("copy_number", "minor_cn", "major_cn")]
-    anno_mustonen$ccf = 1
+  if (!is.na(all_annotations$map_mustonen)) {
+    if (all(unlist(lapply(all_annotations$map_mustonen$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+      # anno_mustonen = do.call(rbind, lapply(all_annotations$map_mustonen$cn_states, function(x) x[[1]]))
+      anno_mustonen = do.call(rbind, padd_empty_entries(all_annotations$map_mustonen, "CloneHD"))
+      anno_mustonen = anno_mustonen[,c("copy_number", "minor_cn", "major_cn")]
+      anno_mustonen$ccf = 1
+      colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
+    } else {
+      print("Found too many annotations for some segments from CloneHD")
+    }
+  } else {
+    anno_mustonen = data.frame(matrix(NA, num_segments, 3))
+    colnames(anno_mustonen) = c("copy_number", "minor_cn", "major_cn")
     colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
-  } else {
-    print("Found too many annotations for some segments from CloneHD")
   }
   
-  if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-    # anno_peifer = do.call(rbind, lapply(all_annotations$map_peifer$cn_states, function(x) x[[1]]))
-    anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
-    anno_peifer = anno_peifer[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")]
-    colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
+  if (!is.na(all_annotations$map_peifer)) {
+    if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+      # anno_peifer = do.call(rbind, lapply(all_annotations$map_peifer$cn_states, function(x) x[[1]]))
+      anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
+      anno_peifer = anno_peifer[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")]
+      colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
+    } else {
+      print("Found too many annotations for some segments from Sclust")
+    }
   } else {
-    print("Found too many annotations for some segments from Sclust")
+    anno_peifer = data.frame(matrix(NA, num_segments, 6))
+    colnames(anno_peifer) = c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
+    colnames(anno_peifer) = paste0("clonehd_", colnames(anno_peifer))
   }
   
   # Check for whether a method has been overruled and reset annotations if needed
