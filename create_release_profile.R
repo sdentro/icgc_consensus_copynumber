@@ -85,7 +85,6 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   if (!is.na(all_annotations$map_vanloowedge)) {
     if (all(unlist(lapply(all_annotations$map_vanloowedge$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_vanloowedge = do.call(rbind, padd_empty_entries(all_annotations$map_vanloowedge, "Battenberg"))
-      # anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
       colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
     } else {
       print("Found too many annotations for some segments from Battenberg")
@@ -100,9 +99,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   
   if (!is.na(all_annotations$map_broad)) {
     if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-      # anno_broad = do.call(rbind, lapply(all_annotations$map_broad$cn_states, function(x) x[[1]]))
       anno_broad = do.call(rbind, padd_empty_entries(all_annotations$map_broad, "ABSOLUTE"))
-      # anno_broad = anno_broad[,c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")]
       colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
     } else {
       print("Found too many annotations for some segments from ABSOLUTE")
@@ -116,9 +113,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   
   if (!is.na(all_annotations$map_dkfz)) {
     if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-      # anno_dkfz = do.call(rbind, lapply(all_annotations$map_dkfz$cn_states, function(x) x[[1]]))
       anno_dkfz = do.call(rbind, padd_empty_entries(all_annotations$map_dkfz, "ACEseq"))
-      # anno_dkfz = anno_dkfz[,c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")]
       colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
     } else {
       print("Found too many annotations for some segments from ACEseq")
@@ -132,16 +127,14 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   
   if (!is.na(all_annotations$map_mustonen)) {
     if (all(unlist(lapply(all_annotations$map_mustonen$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-      # anno_mustonen = do.call(rbind, lapply(all_annotations$map_mustonen$cn_states, function(x) x[[1]]))
       anno_mustonen = do.call(rbind, padd_empty_entries(all_annotations$map_mustonen, "CloneHD"))
-      # anno_mustonen = anno_mustonen[,c("copy_number", "minor_cn", "major_cn")]
       anno_mustonen$ccf = 1
       colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
     } else {
       print("Found too many annotations for some segments from CloneHD")
     }
   } else {
-    anno_mustonen = data.frame(matrix(NA, num_segments, 3))
+    anno_mustonen = data.frame(matrix(NA, num_segments, 6))
     colnames(anno_mustonen) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn")
     colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
   }
@@ -149,15 +142,13 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   
   if (!is.na(all_annotations$map_peifer)) {
     if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
-      # anno_peifer = do.call(rbind, lapply(all_annotations$map_peifer$cn_states, function(x) x[[1]]))
       anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
-      # anno_peifer = anno_peifer[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")]
       colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     } else {
       print("Found too many annotations for some segments from Sclust")
     }
   } else {
-    anno_peifer = data.frame(matrix(NA, num_segments, 6))
+    anno_peifer = data.frame(matrix(NA, num_segments, 9))
     colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
     colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
   }
