@@ -58,18 +58,18 @@ check_mapping = function(dat, anno, methodname) {
 }
 
 #' Append extra lines in case a last segment was not called and sanity check the result
-make_complete_battenberg = function(anno_vanloowedge, dat, num_segments) {
-  if (nrow(anno_vanloowedge) < num_segments) {
+make_anno_complete = function(anno, dat, num_segments, methodname) {
+  if (nrow(anno) < num_segments) {
     template = get_entry_template(all_annotations$map_vanloowedge)
-    colnames(template) = colnames(anno_vanloowedge)
-    for (i in 1:(num_segments-nrow(anno_vanloowedge))) {
-      anno_vanloowedge = rbind(anno_vanloowedge, template)
+    colnames(template) = colnames(anno)
+    for (i in 1:(num_segments-nrow(anno))) {
+      anno = rbind(anno, template)
     }
   }
   
-  check_mapping(dat, anno_vanloowedge, "battenberg")
-  anno_vanloowedge = anno_vanloowedge[,c(4:ncol(anno_vanloowedge))]
-  return(anno_vanloowedge)
+  check_mapping(dat, anno, methodname)
+  anno = anno[,c(4:ncol(anno))]
+  return(anno)
 }
 
 reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
@@ -95,44 +95,46 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_vanloowedge) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")
     colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
   }
-  anno_vanloowedge = make_complete_battenberg(anno_vanloowedge, dat, num_segments)
+  anno_vanloowedge = make_anno_complete(anno_vanloowedge, dat, num_segments, "battenberg")
 
   
   if (!is.na(all_annotations$map_broad)) {
     if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       # anno_broad = do.call(rbind, lapply(all_annotations$map_broad$cn_states, function(x) x[[1]]))
       anno_broad = do.call(rbind, padd_empty_entries(all_annotations$map_broad, "ABSOLUTE"))
-      anno_broad = anno_broad[,c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")]
+      # anno_broad = anno_broad[,c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")]
       colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
     } else {
       print("Found too many annotations for some segments from ABSOLUTE")
     }
   } else {
-    anno_broad = data.frame(matrix(NA, num_segments, 4))
-    colnames(anno_broad) = c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")
+    anno_broad = data.frame(matrix(NA, num_segments, 7))
+    colnames(anno_broad) = c("chromosome", "start", "end", "broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")
     colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
   }
+  anno_broad = make_anno_complete(anno_broad, dat, num_segments, "absolute")
   
   if (!is.na(all_annotations$map_dkfz)) {
     if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       # anno_dkfz = do.call(rbind, lapply(all_annotations$map_dkfz$cn_states, function(x) x[[1]]))
       anno_dkfz = do.call(rbind, padd_empty_entries(all_annotations$map_dkfz, "ACEseq"))
-      anno_dkfz = anno_dkfz[,c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")]
+      # anno_dkfz = anno_dkfz[,c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")]
       colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
     } else {
       print("Found too many annotations for some segments from ACEseq")
     }
   } else {
-    anno_dkfz = data.frame(matrix(NA, num_segments, 6))
-    colnames(anno_dkfz) = c("copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")
+    anno_dkfz = data.frame(matrix(NA, num_segments, 9))
+    colnames(anno_dkfz) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")
     colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
   }
+  anno_dkfz = make_anno_complete(anno_dkfz, dat, num_segments, "dkfz")
   
   if (!is.na(all_annotations$map_mustonen)) {
     if (all(unlist(lapply(all_annotations$map_mustonen$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       # anno_mustonen = do.call(rbind, lapply(all_annotations$map_mustonen$cn_states, function(x) x[[1]]))
       anno_mustonen = do.call(rbind, padd_empty_entries(all_annotations$map_mustonen, "CloneHD"))
-      anno_mustonen = anno_mustonen[,c("copy_number", "minor_cn", "major_cn")]
+      # anno_mustonen = anno_mustonen[,c("copy_number", "minor_cn", "major_cn")]
       anno_mustonen$ccf = 1
       colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
     } else {
@@ -140,24 +142,26 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     }
   } else {
     anno_mustonen = data.frame(matrix(NA, num_segments, 3))
-    colnames(anno_mustonen) = c("copy_number", "minor_cn", "major_cn")
+    colnames(anno_mustonen) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn")
     colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
   }
+  anno_mustonen = make_anno_complete(anno_mustonen, dat, num_segments, "clonehd")
   
   if (!is.na(all_annotations$map_peifer)) {
     if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       # anno_peifer = do.call(rbind, lapply(all_annotations$map_peifer$cn_states, function(x) x[[1]]))
       anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
-      anno_peifer = anno_peifer[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")]
+      # anno_peifer = anno_peifer[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")]
       colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     } else {
       print("Found too many annotations for some segments from Sclust")
     }
   } else {
     anno_peifer = data.frame(matrix(NA, num_segments, 6))
-    colnames(anno_peifer) = c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
-    colnames(anno_peifer) = paste0("clonehd_", colnames(anno_peifer))
+    colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
+    colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
   }
+  anno_peifer = make_anno_complete(anno_peifer, dat, num_segments, "sclust")
   
   # Check for whether a method has been overruled and reset annotations if needed
   anno_broad = reset_overruled_annotations(anno_broad, overrulings_pivot, "broad")
