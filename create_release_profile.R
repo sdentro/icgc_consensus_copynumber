@@ -1,8 +1,14 @@
-get_entry_template = function(map) {
+get_entry_template = function(map, methodname) {
   if (!is.null(map$cn_states[[1]])) {
     template = map$cn_states[[1]][[1]]
   } else if (!is.null(map$cn_states[[2]])) {
     template = map$cn_states[[2]][[1]]
+  } else if (!is.null(map$cn_states[[3]])) {
+    template = map$cn_states[[3]][[1]]
+  } else if (!is.null(map$cn_states[[4]])) {
+    template = map$cn_states[[4]][[1]]
+  } else if (!is.null(map$cn_states[[5]])) {
+    template = map$cn_states[[5]][[1]]
   } else {
     stop(paste0("Could not find template for ", methodname))
   }
@@ -15,7 +21,7 @@ get_entry_template = function(map) {
 #' number of entries as the segments it was mapped to. do.call(rbind,) does
 #' not insert a line when the list entry is NULL
 padd_empty_entries = function(map, methodname) {
-  template = get_entry_template(map) 
+  template = get_entry_template(map, methodname) 
   
   cn_states = list()
   for (i in 1:length(map$cn_states)) {
@@ -144,7 +150,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
       anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
       colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     } else {
-      print("Found too many annotations for some segments from Sclust")
+      stop("Found too many annotations for some segments from Sclust")
     }
     anno_peifer = make_anno_complete(anno_peifer, dat, all_annotations$map_peifer, num_segments, "sclust")
   } else {
@@ -211,7 +217,7 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   
   # Map the annotations against the loaded consensus profile
   all_annotations = parse_all_profiles(samplename, dat, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=F, round_dkfz=F)  
-  combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot, nrow(dat))
+  combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot, n)
   
   # PCAWG11 profile with full annotations
   dat = data.frame(dat, combined_annotations)
