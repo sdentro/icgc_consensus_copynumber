@@ -30,7 +30,7 @@ padd_empty_entries = function(map, methodname) {
 
 #' Function to sanity check the final mapping
 check_mapping = function(dat, anno, methodname) {
-  anno_temp = anno_vanloowedge
+  anno_temp = anno
   are_na = is.na(anno_temp[,1])
   anno_temp[are_na,1:3] = dat[are_na, 1:3]
   dat_gr = makeGRdat_gr = makeGRangesFromDataFrame(dat)
@@ -40,6 +40,10 @@ check_mapping = function(dat, anno, methodname) {
                                      end.field=paste0(methodname, "_end"))
   overlap = findOverlaps(anno_gr, dat_gr)
   
+  # For every segment in anno there must be a segment in dat
+  # with which it overlaps and that has the same index number
+  # Even if segments have been merged, the first "subsegment" 
+  # of that merge should have the same id as the anno seg.
   res = lapply(1:nrow(dat), function(i) {
     if (any(queryHits(overlap)[subjectHits(overlap)==i]==i)) {
       TRUE
