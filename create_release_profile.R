@@ -1,8 +1,4 @@
-#' Function that adds a line of NAs for missing (i.e. NULL) mapped entries
-#' this convenience function is used to make the cn_states list have the same
-#' number of entries as the segments it was mapped to. do.call(rbind,) does
-#' not insert a line when the list entry is NULL
-padd_empty_entries = function(map, methodname) {
+get_entry_template = function(map) {
   if (!is.null(map$cn_states[[1]])) {
     template = map$cn_states[[1]][[1]]
   } else if (!is.null(map$cn_states[[2]])) {
@@ -11,6 +7,15 @@ padd_empty_entries = function(map, methodname) {
     stop(paste0("Could not find template for ", methodname))
   }
   template[1,1:ncol(template)] = NA
+  return(template)
+}
+
+#' Function that adds a line of NAs for missing (i.e. NULL) mapped entries
+#' this convenience function is used to make the cn_states list have the same
+#' number of entries as the segments it was mapped to. do.call(rbind,) does
+#' not insert a line when the list entry is NULL
+padd_empty_entries = function(map, methodname) {
+  template = get_entry_template(map) 
   
   cn_states = list()
   for (i in 1:length(map$cn_states)) {
@@ -21,6 +26,46 @@ padd_empty_entries = function(map, methodname) {
     }
   }
   return(cn_states)
+}
+
+#' Function to sanity check the final mapping
+check_mapping = function(dat, anno, methodname) {
+  anno_temp = anno_vanloowedge
+  are_na = is.na(anno_temp[,1])
+  anno_temp[are_na,1:3] = dat[are_na, 1:3]
+  dat_gr = makeGRdat_gr = makeGRangesFromDataFrame(dat)
+  anno_gr = makeGRangesFromDataFrame(anno_temp, 
+                                     seqnames.field=paste0(methodname, "_chromosome"), 
+                                     start.field=paste0(methodname, "_start"), 
+                                     end.field=paste0(methodname, "_end"))
+  overlap = findOverlaps(anno_gr, dat_gr)
+  
+  res = lapply(1:nrow(dat), function(i) {
+    if (any(queryHits(overlap)[subjectHits(overlap)==i]==i)) {
+      TRUE
+    } else {
+      FALSE
+    }
+  })
+  if (!all(unlist(res))) {
+    all_verdicts = unlist(res)
+    stop(paste0("No overlapping segment for segment(s) ", which(!all_verdicts)))
+  }
+}
+
+#' Append extra lines in case a last segment was not called and sanity check the result
+make_complete_battenberg = function(anno_vanloowedge, dat, num_segments) {
+  if (nrow(anno_vanloowedge) < num_segments) {
+    template = get_entry_template(all_annotations$map_vanloowedge)
+    colnames(template) = colnames(anno_vanloowedge)
+    for (i in 1:(num_segments-nrow(anno_vanloowedge))) {
+      anno_vanloowedge = rbind(anno_vanloowedge, template)
+    }
+  }
+  
+  check_mapping(dat, anno, "battenberg")
+  anno_vanloowedge = anno_vanloowedge[,c(4:ncol(anno_vanloowedge))]
+  return(anno_vanloowedge)
 }
 
 reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
@@ -36,16 +81,18 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   if (!is.na(all_annotations$map_vanloowedge)) {
     if (all(unlist(lapply(all_annotations$map_vanloowedge$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_vanloowedge = do.call(rbind, padd_empty_entries(all_annotations$map_vanloowedge, "Battenberg"))
-      anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
+      # anno_vanloowedge = anno_vanloowedge[,c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")]
       colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
     } else {
       print("Found too many annotations for some segments from Battenberg")
     }
   } else {
-    anno_vanloowedge = data.frame(matrix(NA, num_segments, 10))
-    colnames(anno_vanloowedge) = c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")
+    anno_vanloowedge = data.frame(matrix(NA, num_segments, 13))
+    colnames(anno_vanloowedge) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")
     colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
   }
+  anno_vanloowedge = make_complete_battenberg(anno_vanloowedge, dat, num_segments)
+
   
   if (!is.na(all_annotations$map_broad)) {
     if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
