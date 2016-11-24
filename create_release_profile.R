@@ -117,7 +117,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     } else {
       print("Found too many annotations for some segments from ACEseq")
     }
-    anno_dkfz = make_anno_complete(anno_dkfz, dat, all_annotations$map_dkfz, num_segments, "dkfz")
+    anno_dkfz = make_anno_complete(anno_dkfz, dat, all_annotations$map_dkfz, num_segments, "aceseq")
   } else {
     anno_dkfz = data.frame(matrix(NA, num_segments, 9))
     colnames(anno_dkfz) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")
