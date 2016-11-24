@@ -67,7 +67,7 @@ make_complete_battenberg = function(anno_vanloowedge, dat, num_segments) {
     }
   }
   
-  check_mapping(dat, anno, "battenberg")
+  check_mapping(dat, anno_vanloowedge, "battenberg")
   anno_vanloowedge = anno_vanloowedge[,c(4:ncol(anno_vanloowedge))]
   return(anno_vanloowedge)
 }
