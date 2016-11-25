@@ -1,17 +1,11 @@
 get_entry_template = function(map, methodname) {
-  if (!is.null(map$cn_states[[1]])) {
-    template = map$cn_states[[1]][[1]]
-  } else if (!is.null(map$cn_states[[2]])) {
-    template = map$cn_states[[2]][[1]]
-  } else if (!is.null(map$cn_states[[3]])) {
-    template = map$cn_states[[3]][[1]]
-  } else if (!is.null(map$cn_states[[4]])) {
-    template = map$cn_states[[4]][[1]]
-  } else if (!is.null(map$cn_states[[5]])) {
-    template = map$cn_states[[5]][[1]]
-  } else {
-    stop(paste0("Could not find template for ", methodname))
-  }
+  
+  are_null = unlist(lapply(map$cn_states, is.null))
+  first_not_null = which(!are_null)[1]
+  template = map$cn_states[[first_not_null]][[1]]
+  # } else {
+  #   stop(paste0("Could not find template for ", methodname))
+  # }
   template[1,1:ncol(template)] = NA
   return(template)
 }
