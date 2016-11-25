@@ -162,7 +162,8 @@ output = data.frame(samplename=dat$samplename, purity=purity_med, ploidy=dat$plo
 output$purity = format(output$purity,digits = 2,scientific = FALSE)
 output$ploidy = format(output$ploidy,digits = 3,scientific = FALSE)
 
-colnames(purity) = c("absolute", "aceseq", "battenberg", "clonehd", "sclust")
 write.table(output, file="purity_ploidy_table/consnsus_purity_ploidy.txt", sep="\t", quote=F, row.names=F)
 
+colnames(purity) = c("absolute", "aceseq", "clonehd", "sclust", "battenberg")
+purity = purity[,c("absolute", "aceseq", "battenberg", "clonehd", "sclust")]
 write.table(data.frame(output, purity), file="purity_ploidy_table/consnsus_purity_ploidy_annotated.txt", sep="\t", quote=F, row.names=F)
