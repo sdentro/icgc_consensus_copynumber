@@ -150,7 +150,10 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
       anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
       colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     } else {
-      stop("Found too many annotations for some segments from Sclust")
+      print("Found too many annotations for some segments from Sclust")
+      anno_peifer = data.frame(matrix(NA, num_segments, 9))
+      colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
+      colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     }
     anno_peifer = make_anno_complete(anno_peifer, dat, all_annotations$map_peifer, num_segments, "sclust")
   } else {
@@ -217,7 +220,7 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   
   # Map the annotations against the loaded consensus profile
   all_annotations = parse_all_profiles(samplename, dat, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=F, round_dkfz=F)  
-  combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot, n)
+  combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot, nrow(dat))
   
   # PCAWG11 profile with full annotations
   dat = data.frame(dat, combined_annotations)
