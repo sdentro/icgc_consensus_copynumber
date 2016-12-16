@@ -3,6 +3,7 @@ suppressPackageStartupMessages(library(gtools))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(gridExtra))
+suppressPackageStartupMessages(library(parallel))
 
 # Static for plot
 RECT_HEIGHT = 0.15
@@ -180,42 +181,86 @@ parse_broad_purity = function(purityfile, samplename) {
   return(purity)
 }
 
-parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, round_dkfz=T) {
+parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, round_dkfz=T, num_threads=1) {
+  # print("Running")
+  do_mapping = function(index, all_dat, method_names, segments) {
+    dat = all_dat[[index]]
+    method_name = method_names[index]
+    if (!is.na(dat)) {
+      dat_map = mapdata(segments, dat, is_dkfz=method_name=="dkfz", is_broad=method_name=="broad")
+    } else {
+      dat_map = NA
+    }
+    return(list(dat=dat, map=dat_map))
+  }
   
   dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=round_dkfz)
-  if (!is.na(dat_dkfz)) {
-    map_dkfz = mapdata(segments, dat_dkfz, is_dkfz=T)
-  } else {
-    map_dkfz = NA
-  }
-  
   dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename)
-  if (!is.na(dat_vanloowedge)) {
-    map_vanloowedge = mapdata(segments, dat_vanloowedge)
-  } else {
-    map_vanloowedge = NA
-  }
-  
   dat_peifer = parse_peifer(method_segmentsfile[["peifer"]], method_purityfile[["peifer"]], samplename)
-  if (!is.na(dat_peifer)) {
-    map_peifer = mapdata(segments, dat_peifer)
-  } else {
-    map_peifer = NA
-  }
-  
   dat_mustonen = parse_mustonen(method_segmentsfile[["mustonen"]], method_purityfile[["mustonen"]], samplename, has_header=mustonen_has_header)
-  if (!is.na(dat_mustonen)) {
-    map_mustonen = mapdata(segments, dat_mustonen)
-  } else {
-    map_mustonen = NA
-  }
-  
   dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
-  if (!is.na(dat_broad)) {
-    map_broad = mapdata(segments, dat_broad, is_broad=T)
-  } else {
-    map_broad = NA
-  }
+  
+  res = mclapply(1:5,
+               do_mapping,
+               list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad),
+               c("dkfz", "vanloowedge", "peifer", "mustonen", "broad"),
+               segments,
+               mc.cores=num_threads)
+  # print("Done apply")
+  # res = list()
+  # for (i in 1:5) {
+  #   print(i)
+  #   res[[i]] = do_mapping(i,
+  #              list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad),
+  #              c("dkfz", "vanloowedge", "peifer", "mustonen", "broad"),
+  #              segments)
+  # }
+  
+  # dat_dkfz = res[[1]]$dat
+  map_dkfz = res[[1]]$map
+  # dat_vanloowedge = res[[2]]$dat
+  map_vanloowedge = res[[2]]$map
+  # dat_peifer = res[[3]]$dat
+  map_peifer = res[[3]]$map
+  # dat_mustonen = res[[4]]$dat
+  map_mustonen = res[[4]]$map
+  # dat_broad = res[[5]]$dat
+  map_broad = res[[5]]$map
+  
+  # dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=round_dkfz)
+  # if (!is.na(dat_dkfz)) {
+  #   map_dkfz = mapdata(segments, dat_dkfz, is_dkfz=T)
+  # } else {
+  #   map_dkfz = NA
+  # }
+  # 
+  # dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename)
+  # if (!is.na(dat_vanloowedge)) {
+  #   map_vanloowedge = mapdata(segments, dat_vanloowedge)
+  # } else {
+  #   map_vanloowedge = NA
+  # }
+  # 
+  # dat_peifer = parse_peifer(method_segmentsfile[["peifer"]], method_purityfile[["peifer"]], samplename)
+  # if (!is.na(dat_peifer)) {
+  #   map_peifer = mapdata(segments, dat_peifer)
+  # } else {
+  #   map_peifer = NA
+  # }
+  # 
+  # dat_mustonen = parse_mustonen(method_segmentsfile[["mustonen"]], method_purityfile[["mustonen"]], samplename, has_header=mustonen_has_header)
+  # if (!is.na(dat_mustonen)) {
+  #   map_mustonen = mapdata(segments, dat_mustonen)
+  # } else {
+  #   map_mustonen = NA
+  # }
+  # 
+  # dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
+  # if (!is.na(dat_broad)) {
+  #   map_broad = mapdata(segments, dat_broad, is_broad=T)
+  # } else {
+  #   map_broad = NA
+  # }
   
   if (!is.null(method_baflogr)) {
     baflogr_vanloowedge = read.table(method_baflogr$vanloowedge, header=T, stringsAsFactors=F)
@@ -330,32 +375,23 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
     return(temp_segs)
   }
   
-  
-  bps_gr = makeGRangesFromDataFrame(bp_segments)
-  cns_gr = makeGRangesFromDataFrame(cn_segments, keep.extra.columns=T)
-  # overlap = findOverlaps(cns_gr, bps_gr)
-  
-  status = rep(NA, length(bps_gr))
-  cn_states = list()
-  
-  # for (i in 1:length(overlap)) {
-  for (i in 1:nrow(bp_segments)) {
+  map_segment = function(i, cns_gr, bps_gr, bp_segments, cn_segments, is_dkfz, dkfz_subclonality_cutoff, is_broad) {
     overlap = findOverlaps(cns_gr, bps_gr[i,])
     
     # No overlap, no call
     if (length(overlap)==0) {
-      next
+      return(list(cn_states=NULL, status=NULL))
       
-    # One segment overlaps, but could be subclonal in DKFZ output
+      # One segment overlaps, but could be subclonal in DKFZ output
     } else if (length(overlap)==1) {
       
       if (is_dkfz) {
-        status[i] = asses_dkfz_clonal_status(cn_segments, queryHits(overlap), dkfz_subclonality_cutoff)
+        status = asses_dkfz_clonal_status(cn_segments, queryHits(overlap), dkfz_subclonality_cutoff)
       } else {
         # clonal
-        status[i] = "clonal"
+        status = "clonal"
       }
-      cn_states[[i]] = list(cn_segments[queryHits(overlap),])
+      cn_states = list(cn_segments[queryHits(overlap),])
       
       # More than one segment overlaps, this could be subclonal, but it could also be that another segment slightly  
       # overlaps with the breakpoint defined segment and there are not really two calls that overlap
@@ -384,27 +420,27 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         
         if (length(overlap)==0) {
           print(paste0("mapdata broad - found multiple clonal segments that overlap, but also with other segments ", i))
-          next
+          return(list(cn_states=NULL, status=NULL))
         }
         
         temp_segs = merge_broad_segments(cn_segments, overlap, bp_segments[i,,drop=F])
         if (nrow(temp_segs) == 1) {
-          status[i] = "clonal"
-          cn_states[[i]] = list(temp_segs)
+          status = "clonal"
+          cn_states = list(temp_segs)
           next # skip the rest of the loop as it attempts to store the unmerged segments
         } else if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0)>=1) {
           # Subclonality is encoded as one historical and at least one not state
-          status[i] = "subclonal"
-          cn_states[[i]] = list(temp_segs)
+          status = "subclonal"
+          cn_states = list(temp_segs)
         } else {
           print(bp_segments[i,])
           print(temp_segs)
           print(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
-          next
+          return(list(cn_states=NULL, status=NULL))
         }
-          
         
-      # No segments overlap 50% - other pipelines
+        
+        # No segments overlap 50% - other pipelines
       } else if (length(overlap)==0) {
         # In this case the cn segment is smaller than the breakpoint given segment
         # find the breakpoint segment that overlaps with 95% of the given cn segment and make that mapping
@@ -413,7 +449,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         # Check for zero sized segments
         if (sum(segment_overlaps_bp > 0)==0) {
           # No more candidates left, so no overlap
-          next
+          return(list(cn_states=NULL, status=NULL))
         }
         
         # Remove segments that are 1bp long
@@ -422,38 +458,65 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         
         # There are no segments that overlap considerably with the given segment, no call
         if (length(overlap)==0) {
-          next
+          return(list(cn_states=NULL, status=NULL))
           
           # One segment overlaps considerably, therefore clonal
         } else if (length(overlap)==1) {
           if (is_dkfz) {
-            status[i] = asses_dkfz_clonal_status(cn_segments, queryHits(overlap), dkfz_subclonality_cutoff)
+            status = asses_dkfz_clonal_status(cn_segments, queryHits(overlap), dkfz_subclonality_cutoff)
           } else {
             # clonal
-            status[i] = "clonal"
+            status = "clonal"
           }
           
           # Two segments overlap considerably, therefore subclonal
         } else {
-          status[i] = "subclonal"
+          status = "subclonal"
         }
         
         # clonal - because only one segment overlaps considerably
       } else if (length(overlap)==1) {
         if (is_dkfz) {
-          status[i] = asses_dkfz_clonal_status(cn_segments, queryHits(overlap), dkfz_subclonality_cutoff)
+          status = asses_dkfz_clonal_status(cn_segments, queryHits(overlap), dkfz_subclonality_cutoff)
         } else {
           # clonal
-          status[i] = "clonal"
+          status = "clonal"
         }
         
         # subclonal - because multiple segments overlap considerably
       } else {
-        status[i] = "subclonal"
+        status = "subclonal"
       }
-      cn_states[[i]] = list(cn_segments[queryHits(overlap),])
+      cn_states = list(cn_segments[queryHits(overlap),])
+    }
+    return(list(cn_states=cn_states, status=status))
+  }
+  
+  
+  bps_gr = makeGRangesFromDataFrame(bp_segments)
+  cns_gr = makeGRangesFromDataFrame(cn_segments, keep.extra.columns=T)
+  
+  status = rep(NA, length(bps_gr))
+  cn_states = list()
+  
+  # res = mclapply(1:nrow(bp_segments), map_segment, cns_gr, bps_gr, bp_segments, cn_segments, is_dkfz, dkfz_subclonality_cutoff, is_broad, mc.cores=2)
+  res = lapply(1:nrow(bp_segments), map_segment, cns_gr, bps_gr, bp_segments, cn_segments, is_dkfz, dkfz_subclonality_cutoff, is_broad)
+  
+  for (i in 1:length(res)) {
+    if (!is.null(res[[i]]$status) & !is.null(res[[i]]$cn_states)) {
+      status[[i]] = res[[i]]$status
+      cn_states[[i]] = res[[i]]$cn_states
     }
   }
+  
+  # # for (i in 1:length(overlap)) {
+  # for (i in 1:nrow(bp_segments)) {
+  #   res = map_segment(i, cns_gr, bps_gr, bp_segments, cn_segments, is_dkfz, dkfz_subclonality_cutoff, is_broad)
+  #   if (!is.null(res$status) & !is.null(res$cn_states)) {
+  #     status[[i]] = res$status
+  #     cn_states[[i]] = res$cn_states
+  #   }
+  # }
   return(list(status=status, cn_states=cn_states)) 
 }
 

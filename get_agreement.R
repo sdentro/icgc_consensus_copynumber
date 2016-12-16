@@ -248,12 +248,14 @@ test_purities = function(purities, consensus_profile) {
 library(readr)
 source("~/repo/icgc_consensus_copynumber/util.R")
 max.plot.cn=4
+num_threads=1
 
 
 args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
 
+# setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # outdir = "output"
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
@@ -303,7 +305,7 @@ if (file.exists(breakpoints_file)) {
   method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
                         broad=broad_baflogrfile)
   
-  all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F)
+  all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, num_threads=num_threads)
   
   print("Getting clonal agreement...")
   agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments)
@@ -324,11 +326,11 @@ if (file.exists(breakpoints_file)) {
   # Agreement after rounding
   #####################################################################
   print("Getting rounded agreement...")
-  dkfz_segmentsfile = file.path(outdir, "dkfz_rounded_clonal", paste0(samplename, "_segments.txt"))
-  vanloowedge_segmentsfile = file.path(outdir, "vanloowedge_rounded_clonal", paste0(samplename, "_segments.txt"))
-  peifer_segmentsfile = file.path(outdir, "peifer_rounded_clonal", paste0(samplename, "_segments.txt"))
-  mustonen_segmentsfile = file.path(outdir, "mustonen_rounded_clonal", paste0(samplename, "_segments.txt"))
-  broad_segmentsfile = file.path(outdir, "broad_rounded_clonal", paste0(samplename, "_segments.txt"))
+  dkfz_segmentsfile = paste0(outdir, "dkfz_rounded_clonal/", paste0(samplename, "_segments.txt"))
+  vanloowedge_segmentsfile = paste0(outdir, "vanloowedge_rounded_clonal/", paste0(samplename, "_segments.txt"))
+  peifer_segmentsfile = paste0(outdir, "peifer_rounded_clonal/", paste0(samplename, "_segments.txt"))
+  mustonen_segmentsfile = paste0(outdir, "mustonen_rounded_clonal/", paste0(samplename, "_segments.txt"))
+  broad_segmentsfile = paste0(outdir, "broad_rounded_clonal/", paste0(samplename, "_segments.txt"))
   
   method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                              vanloowedge=vanloowedge_segmentsfile,
@@ -336,7 +338,7 @@ if (file.exists(breakpoints_file)) {
                              mustonen=mustonen_segmentsfile,
                              broad=broad_segmentsfile)
   
-  all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=T)
+  all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=T, num_threads=num_threads)
   agreement_rounded = get_frac_genome_agree(samplename, all_data_rounded, segments, method_overruled=method_overruled)
   
   #####################################################################
