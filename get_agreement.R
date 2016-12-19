@@ -524,6 +524,11 @@ if (file.exists(breakpoints_file)) {
   print("Filling in remaining segments with best method...")
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
   consensus_profile = data.frame(segments, consensus_profile)
+  
+  if (any(consensus_profile$major_cn < 0 | consensus_profile$minor_cn < 0)) {
+    print(paste0(samplename, " contains segments with CN state lower than 1"))
+  }
+  
   write.table(consensus_profile, file=file.path(outdir, "consensus_profile", paste0(samplename, "_consensus_profile.txt")), quote=F, sep="\t", row.names=F)
   
   # TODO bugfix : Is creating the full data.frame here needed? it's done above already?
