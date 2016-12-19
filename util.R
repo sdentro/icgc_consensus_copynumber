@@ -388,7 +388,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         if (nrow(temp_segs) == 1) {
           status = "clonal"
           cn_states = list(temp_segs)
-          next # skip the rest of the loop as it attempts to store the unmerged segments
+          return(list(cn_states=NULL, status=NULL)) # skip the rest of the loop as it attempts to store the unmerged segments
         } else if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0)>=1) {
           # Subclonality is encoded as one historical and at least one not state
           status = "subclonal"
