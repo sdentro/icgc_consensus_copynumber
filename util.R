@@ -214,10 +214,20 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
   map_broad = res[[5]]$map
   
   if (!is.null(method_baflogr)) {
-    baflogr_vanloowedge = read.table(method_baflogr$vanloowedge, header=T, stringsAsFactors=F)
-    map_vanloowedge_baflogr = mapdata(segments, baflogr_vanloowedge)
-    baflogr_broad = read.table(method_baflogr$broad, header=T, stringsAsFactors=F)
-    map_broad_baflogr = mapdata(segments, baflogr_broad)
+    if (file.exists(method_baflogr$vanloowedge)) {
+      baflogr_vanloowedge = read.table(method_baflogr$vanloowedge, header=T, stringsAsFactors=F)
+      map_vanloowedge_baflogr = mapdata(segments, baflogr_vanloowedge)
+    } else { 
+      map_vanloowedge_baflogr = NA
+    }
+    
+    if (file.exists(method_baflogr$broad)) {
+      baflogr_broad = read.table(method_baflogr$broad, header=T, stringsAsFactors=F)
+      map_broad_baflogr = mapdata(segments, baflogr_broad)
+    } else { 
+      map_broad_baflogr = NA
+    }
+    
   } else {
     map_vanloowedge_baflogr = NA
     map_broad_baflogr = NA
