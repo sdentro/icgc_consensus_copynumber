@@ -151,9 +151,9 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
       colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     } else {
       print("Found too many annotations for some segments from Sclust")
-      anno_peifer = data.frame(matrix(NA, num_segments, 9))
-      colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
-      colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
+      # anno_peifer = data.frame(matrix(NA, num_segments, 9))
+      # colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
+      # colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
     }
     anno_peifer = make_anno_complete(anno_peifer, dat, all_annotations$map_peifer, num_segments, "sclust")
   } else {
@@ -184,7 +184,7 @@ current_date = gsub("-", "", Sys.Date())
 
 cons_profile_file = file.path("output/consensus_profile", paste0(samplename, "_consensus_profile.txt"))
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
-overrulings_pivot = readr::read_tsv("manual_review_overrulings_pivot_table.txt")
+overrulings_pivot = as.data.frame(readr::read_tsv("manual_review_overrulings_pivot_table.txt"))
 overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
 
 if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
