@@ -486,6 +486,7 @@ if (file.exists(breakpoints_file)) {
   frac_agreement_rounded = calc_method_agreement(all_data_rounded, segments, consensus_profile, "clonal")
   rounded_ranking = sort(unlist(frac_agreement_rounded), decreasing=T)
   
+  # TODO: Add step to weed out cases that are ploidy uncertain (level g/star 0) and ploidy certain (level f/star 1)
   
   #####################################################################
   # Create the consensus using the method that is most often agreeing with the consensus so far
@@ -525,6 +526,7 @@ if (file.exists(breakpoints_file)) {
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
   consensus_profile = data.frame(segments, consensus_profile)
   
+  print(head(consensus_profile))
   if (any(consensus_profile$major_cn < 0 | consensus_profile$minor_cn < 0)) {
     print(paste0(samplename, " contains segments with CN state lower than 1"))
   }
