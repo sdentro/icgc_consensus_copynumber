@@ -182,7 +182,7 @@ parse_broad_purity = function(purityfile, samplename) {
 }
 
 parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, round_dkfz=T, num_threads=1) {
-  # print("Running")
+
   do_mapping = function(index, all_dat, method_names, segments) {
     dat = all_dat[[index]]
     method_name = method_names[index]
@@ -206,61 +206,12 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
                c("dkfz", "vanloowedge", "peifer", "mustonen", "broad"),
                segments,
                mc.cores=num_threads)
-  # print("Done apply")
-  # res = list()
-  # for (i in 1:5) {
-  #   print(i)
-  #   res[[i]] = do_mapping(i,
-  #              list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad),
-  #              c("dkfz", "vanloowedge", "peifer", "mustonen", "broad"),
-  #              segments)
-  # }
   
-  # dat_dkfz = res[[1]]$dat
   map_dkfz = res[[1]]$map
-  # dat_vanloowedge = res[[2]]$dat
   map_vanloowedge = res[[2]]$map
-  # dat_peifer = res[[3]]$dat
   map_peifer = res[[3]]$map
-  # dat_mustonen = res[[4]]$dat
   map_mustonen = res[[4]]$map
-  # dat_broad = res[[5]]$dat
   map_broad = res[[5]]$map
-  
-  # dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=round_dkfz)
-  # if (!is.na(dat_dkfz)) {
-  #   map_dkfz = mapdata(segments, dat_dkfz, is_dkfz=T)
-  # } else {
-  #   map_dkfz = NA
-  # }
-  # 
-  # dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename)
-  # if (!is.na(dat_vanloowedge)) {
-  #   map_vanloowedge = mapdata(segments, dat_vanloowedge)
-  # } else {
-  #   map_vanloowedge = NA
-  # }
-  # 
-  # dat_peifer = parse_peifer(method_segmentsfile[["peifer"]], method_purityfile[["peifer"]], samplename)
-  # if (!is.na(dat_peifer)) {
-  #   map_peifer = mapdata(segments, dat_peifer)
-  # } else {
-  #   map_peifer = NA
-  # }
-  # 
-  # dat_mustonen = parse_mustonen(method_segmentsfile[["mustonen"]], method_purityfile[["mustonen"]], samplename, has_header=mustonen_has_header)
-  # if (!is.na(dat_mustonen)) {
-  #   map_mustonen = mapdata(segments, dat_mustonen)
-  # } else {
-  #   map_mustonen = NA
-  # }
-  # 
-  # dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
-  # if (!is.na(dat_broad)) {
-  #   map_broad = mapdata(segments, dat_broad, is_broad=T)
-  # } else {
-  #   map_broad = NA
-  # }
   
   if (!is.null(method_baflogr)) {
     baflogr_vanloowedge = read.table(method_baflogr$vanloowedge, header=T, stringsAsFactors=F)
@@ -647,10 +598,14 @@ parse_bb_template = function() {
 #####################################################################
 # Round subclonal CNAs
 #####################################################################
-round_vanloo_wedge = function(map, i, purity) {
+round_vanloo_wedge = function(map, i, purity, rounding_up=T) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
-    index_major_clone = which.max(dat$ccf)
+    if (rounding_up) {
+      index_major_clone = which.max(dat$ccf)
+    } else {
+      index_major_clone = which.min(dat$ccf)
+    }
     dat = map$cn_states[[i]][[1]][index_major_clone,,drop=F]
     dat$cellular_prevalence = purity
     dat$ccf = 1
@@ -662,10 +617,14 @@ round_vanloo_wedge = function(map, i, purity) {
   }
 }
 
-round_peifer = function(map, i, purity) {
+round_peifer = function(map, i, purity, rounding_up=T) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
-    index_major_clone = which.max(dat$ccf)
+    if (rounding_up) {
+      index_major_clone = which.max(dat$ccf)
+    } else {
+      index_major_clone = which.min(dat$ccf)
+    }
     dat = map$cn_states[[i]][[1]][index_major_clone,,drop=F]
     dat$cellular_prevalence = purity
     dat$ccf = 1
@@ -681,11 +640,16 @@ round_mustonen = function(map, i) {
   return(map$cn_states[[i]][[1]][1,,drop=F])
 }
 
-round_dkfz = function(map, i, purity) {
+round_dkfz = function(map, i, purity, rounding_up=T) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) == 1) {
     temp = map$cn_states[[i]][[1]]
-    temp$minor_cn = round(temp$minor_cn)
-    temp$major_cn = round(temp$major_cn)
+    if (rounding_up) {
+      temp$minor_cn = ceiling(temp$minor_cn)
+      temp$major_cn = ceiling(temp$major_cn)
+    } else {
+      temp$minor_cn = floor(temp$minor_cn)
+      temp$major_cn = floor(temp$major_cn)
+    }
     temp$copy_number = temp$minor_cn + temp$major_cn
     temp$cellular_prevalence = purity
     temp$ccf = 1
@@ -698,11 +662,15 @@ round_dkfz = function(map, i, purity) {
   }
 }
 
-round_broad = function(map, i) {
+round_broad = function(map, i, rounding_up=T) {
   if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
-    if (sum(dat$historically_clonal==1)==1) {
+    if (rounding_up & sum(dat$historically_clonal==1)==1) {
+      # Rounding up means taking the historically clonal state
       dat = dat[dat$historically_clonal==1,,drop=F]
+    } else if (!rounding_up & sum(dat$historically_clonal==1)==1) {
+      # Rounding down means taking the major subclonal state
+      dat = dat[which.max(dat$ccf[dat$historically_clonal < 1]),,drop=F]
     } else {
       print(paste0("round_broad - multiple segments, pick largest for segment ", i))
       dat = dat[which.max(dat$end-dat$start),,drop=F]

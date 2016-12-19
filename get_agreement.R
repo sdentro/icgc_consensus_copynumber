@@ -256,7 +256,7 @@ samplename = args[1]
 outdir = args[2]
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
-# outdir = "output"
+# outdir = "./"
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 
@@ -342,103 +342,104 @@ if (file.exists(breakpoints_file)) {
   agreement_rounded = get_frac_genome_agree(samplename, all_data_rounded, segments, method_overruled=method_overruled)
   
   #####################################################################
+  # Agreement after alternate rounding
+  #####################################################################
+  # Load previously generated alternate rounded profile and perform the mapping, the code below should consider this as well
+  print("Getting alt rounded agreement...")
+  dkfz_segmentsfile = paste0(outdir, "dkfz_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  vanloowedge_segmentsfile = paste0(outdir, "vanloowedge_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  peifer_segmentsfile = paste0(outdir, "peifer_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  mustonen_segmentsfile = paste0(outdir, "mustonen_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  broad_segmentsfile = paste0(outdir, "broad_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  
+  all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=T, num_threads=num_threads)
+  agreement_rounded_alt = get_frac_genome_agree(samplename, all_data_rounded_alt, segments, method_overruled=method_overruled)
+  
+  #####################################################################
   # Agreement with accepting majority vote
   #####################################################################
   print("Getting majority vote agreement...")
   agreement_rounded_majority_vote = get_frac_genome_agree_maj_vote(samplename, all_data_rounded, segments, method_overruled=method_overruled)
   
   #####################################################################
-  # Agreement on median cn states
-  #####################################################################
-  # No longer used as this has unwanted side affects when methods are disagreeing and can create non-integer solutions
-  # 
-  # r = agreement_rounded$cn_states
-  # cn_states = list()
-  # num_methods = rep(0, length(r))
-  # agree = rep(F, length(r))
-  # for (i in 1:length(r)) {
-  #   
-  #   if (!agreement_rounded$agree[i]) {
-  #     major = median(r[[i]]$major_cn, na.rm=T)
-  #     minor = median(r[[i]]$minor_cn, na.rm=T)
-  #     num_methods[i] = sum(!is.na(r[[i]]$major_cn))
-  #     agree[i] = T
-  #   } else {
-  #     # There are no na's in this data.frame and there is agreement on the cn state, so its safe to take the first entry here
-  #     major = r[[i]]$major_cn[1]
-  #     minor = r[[i]]$minor_cn[1]
-  #     num_methods[i] = 1
-  #     agree[i] = T
-  #   }
-  #   cn_states[[i]] = data.frame(method="median", major_cn=major, minor_cn=minor)
-  # }
-  # frac_agree = NA
-  # agreement_median = list(frac_agree=frac_agree, segments=r$segments, agree=agree, cn_states=cn_states)
-  
-  
-  #####################################################################
   # Piece together a complete agreement profile
   #####################################################################
-  create_consensus_profile = function(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
+  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     for (i in 1:length(r)) {
 
-      if (agreement_clonal$agree[i]) {
-        # if clonal agree, choose that and assign 1*
-        new_entry = agreement_clonal$cn_states[[i]][1,2:3]
-        new_entry$star = 3
-        new_entry$level = "a"
+      # Separate approaches for X, Y and autosomes
+      if (segments$chromosome[i]=="X") {
+        print("Found X")
         
-      } else if (agreement_clonal_overrule$agree[i]) {
-        # pivot table
-        new_entry = agreement_clonal_overrule$cn_states[[i]][1,2:3]
-        new_entry$star = 3
-        new_entry$level = "b"
+      } else if (segments$chromosome[i]=="Y") {
+        print("Found Y")
         
-      } else if (agreement_rounded$agree[i]) {
-        # else if rounded clonal agree, choose that and assign 2*
-        new_entry = agreement_rounded$cn_states[[i]][1,2:3]
-        new_entry$star = 2
-        new_entry$level = "c"
+      } else {
+      
+        if (agreement_clonal$agree[i]) {
+          # if clonal agree, choose that and assign 1*
+          new_entry = agreement_clonal$cn_states[[i]][1,2:3]
+          new_entry$star = 3
+          new_entry$level = "a"
           
-      } else if (agreement_rounded_majority_vote$agree[i]) {
-        # majority vote by > 50% of the methods 
-        new_entry = agreement_rounded_majority_vote$cn_states[[i]][1,1:2]
-        new_entry$star = 2
-        new_entry$level = "d"
-        row.names(new_entry) = NULL
+        } else if (agreement_clonal_overrule$agree[i]) {
+          # pivot table
+          new_entry = agreement_clonal_overrule$cn_states[[i]][1,2:3]
+          new_entry$star = 3
+          new_entry$level = "b"
+          
+        } else if (agreement_rounded$agree[i]) {
+          # else if rounded clonal agree, choose that and assign 2*
+          new_entry = agreement_rounded$cn_states[[i]][1,2:3]
+          new_entry$star = 2
+          new_entry$level = "c"
+          
+        } else if (agreement_rounded_alt$agree[i]) {
+          # else if rounded clonal agree, choose that and assign 2*
+          new_entry = agreement_rounded_alt$cn_states[[i]][1,2:3]
+          new_entry$star = 2
+          new_entry$level = "c"
+            
+        } else if (agreement_rounded_majority_vote$agree[i]) {
+          # majority vote by > 50% of the methods 
+          new_entry = agreement_rounded_majority_vote$cn_states[[i]][1,1:2]
+          new_entry$star = 2
+          new_entry$level = "d"
+          row.names(new_entry) = NULL
+          
+        } else {
+          # else no solution for now, below will select the best method for this sample
+          new_entry = data.frame(major_cn=NA, minor_cn=NA)
+          new_entry$star = 1
+          new_entry$level = "e"
+        }
         
-      } else {
-        # else no solution for now, below will select the best method for this sample
-        new_entry = data.frame(major_cn=NA, minor_cn=NA)
-        new_entry$star = 1
-        new_entry$level = "e"
+        
+        if (!is.null(map_broad_baflogr$cn_states[[i]])) {
+          new_entry$broad_baf = map_broad_baflogr$cn_states[[i]][[1]][1,4]
+          new_entry$broad_logr = map_broad_baflogr$cn_states[[i]][[1]][1,5]
+        } else {
+          new_entry$broad_baf = NA
+          new_entry$broad_logr = NA
+        }
+        
+        if (!is.null(map_vanloowedge_baflogr$cn_states[[i]])) {
+          new_entry$vanloowedge_baf = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,4]
+          new_entry$vanloowedge_logr = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,5]
+        } else {
+          new_entry$vanloowedge_baf = NA
+          new_entry$vanloowedge_logr = NA
+        }
+        
+        consensus_profile = rbind(consensus_profile, new_entry)
       }
-      
-      
-      if (!is.null(map_broad_baflogr$cn_states[[i]])) {
-        new_entry$broad_baf = map_broad_baflogr$cn_states[[i]][[1]][1,4]
-        new_entry$broad_logr = map_broad_baflogr$cn_states[[i]][[1]][1,5]
-      } else {
-        new_entry$broad_baf = NA
-        new_entry$broad_logr = NA
-      }
-      
-      if (!is.null(map_vanloowedge_baflogr$cn_states[[i]])) {
-        new_entry$vanloowedge_baf = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,4]
-        new_entry$vanloowedge_logr = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,5]
-      } else {
-        new_entry$vanloowedge_baf = NA
-        new_entry$vanloowedge_logr = NA
-      }
-      
-      consensus_profile = rbind(consensus_profile, new_entry)
     }
     return(consensus_profile)
   }
   print("Building initial consensus profile...")
-  consensus_profile = create_consensus_profile(agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_majority_vote, all_data_clonal$map_broad_baflogr, all_data_clonal$map_vanloowedge_baflogr)
+  consensus_profile = create_consensus_profile(segments, agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, all_data_clonal$map_broad_baflogr, all_data_clonal$map_vanloowedge_baflogr)
   
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
