@@ -1,3 +1,9 @@
+#' 
+#' This script produces the final consensus profiles that are ready to be released. It does:
+#' * Strip the unneeded columns from the interim consensus profiles to create the PCAWG-wide release of clonal copy number
+#' * Annotate the interim consensus profiles to create the PCAWG-11 release with subclonal calls from every method annotated
+#' 
+
 get_entry_template = function(map, methodname) {
   
   are_null = unlist(lapply(map$cn_states, is.null))
@@ -174,6 +180,8 @@ args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
 
+current_date = gsub("-", "", Sys.Date())
+
 cons_profile_file = file.path("output/consensus_profile", paste0(samplename, "_consensus_profile.txt"))
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 overrulings_pivot = readr::read_tsv("manual_review_overrulings_pivot_table.txt")
@@ -218,9 +226,9 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   
   # PCAWG11 profile with full annotations
   dat = data.frame(dat, combined_annotations)
-  write.table(dat, file=file.path(outdir, "pcawg11_consensus_profile", paste0(samplename, ".consensus.20161103.somatic.cna.annotated.txt")), quote=F, row.names=F, sep="\t")
+  write.table(dat, file=file.path(outdir, "pcawg11_consensus_profile", paste0(samplename, ".consensus.", current_date, ".somatic.cna.annotated.txt")), quote=F, row.names=F, sep="\t")
   
   # PCAWG-wide profile
   dat = dat[, c("chromosome", "start", "end", "total_cn", "major_cn", "minor_cn", "star")]
-  write.table(dat, file=file.path(outdir, "consensus_profile_final", paste0(samplename, ".consensus.20161103.somatic.cna.txt")), quote=F, row.names=F, sep="\t")
+  write.table(dat, file=file.path(outdir, "consensus_profile_final", paste0(samplename, ".consensus.", current_date, ".somatic.cna.txt")), quote=F, row.names=F, sep="\t")
 }
