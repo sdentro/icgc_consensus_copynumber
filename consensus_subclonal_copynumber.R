@@ -4,7 +4,7 @@ source("~/repo/icgc_consensus_copynumber/util.R")
 #####################################################################
 # Rounded CN main method
 #####################################################################
-create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4) {
+create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4, rounding_up=T) {
   
   #####################################################################
   # Read in and map all the raw data
@@ -93,7 +93,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   for (i in 1:nrow(segments)) {
     
     if (!is.na(map_broad) && length(map_broad$cn_states) >= i) {
-      rounded_clonal$broad = rbind(rounded_clonal$broad, round_broad(map_broad, i))
+      rounded_clonal$broad = rbind(rounded_clonal$broad, round_broad(map_broad, i, rounding_up=rounding_up))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       temp_entry$historically_clonal = 0
@@ -101,7 +101,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     }
     
     if (!is.na(map_vanloowedge) && length(map_vanloowedge$cn_states) >= i) {
-      rounded_clonal$vanloowedge = rbind(rounded_clonal$vanloowedge, round_vanloo_wedge(map_vanloowedge, i, purity_vanloowedge))
+      rounded_clonal$vanloowedge = rbind(rounded_clonal$vanloowedge, round_vanloo_wedge(map_vanloowedge, i, purity_vanloowedge, rounding_up=rounding_up))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       colnames(temp_entry)[7] = "cellular_prevalence"
@@ -110,7 +110,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     }
 
     if (!is.na(map_peifer) && length(map_peifer$cn_states) >= i) {
-      rounded_clonal$peifer = rbind(rounded_clonal$peifer, round_peifer(map_peifer, i, purity_peifer))
+      rounded_clonal$peifer = rbind(rounded_clonal$peifer, round_peifer(map_peifer, i, purity_peifer, rounding_up=rounding_up))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       colnames(temp_entry)[7] = "cellular_prevalence"
@@ -128,7 +128,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     }
 
     if (!is.na(map_dkfz) && length(map_dkfz$cn_states) >= i) {
-      rounded_clonal$dkfz = rbind(rounded_clonal$dkfz, round_dkfz(map_dkfz, i, purity_dkfz))
+      rounded_clonal$dkfz = rbind(rounded_clonal$dkfz, round_dkfz(map_dkfz, i, purity_dkfz, rounding_up=rounding_up))
     } else {
       temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
       colnames(temp_entry)[7] = "cellular_prevalence"
@@ -194,6 +194,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
 args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
+rounding_up = as.logical(args[3])
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # setwd("/nfs/users/nfs_c/cgppipe/pancancer/workspace/sd11/icgc_pancan_full/consensus_copynumber/2016_09_consensus_breakpoints_fullruns/20161024_rounding/")
@@ -237,7 +238,7 @@ breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 if (file.exists(breakpoints_file)) {
   breakpoints = read.table(breakpoints_file, header=T, stringsAsFactors=F)
   segments = breakpoints2segments(breakpoints)
-  create_rounded_copynumber(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4)
+  create_rounded_copynumber(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4, rounding_up=rounding_up)
 }
 
 q(save="no")
