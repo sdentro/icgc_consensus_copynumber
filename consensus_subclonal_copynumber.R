@@ -4,7 +4,7 @@ source("~/repo/icgc_consensus_copynumber/util.R")
 #####################################################################
 # Rounded CN main method
 #####################################################################
-create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4, rounding_up=T) {
+create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4, rounding_up=T, make_figures=T) {
   
   #####################################################################
   # Read in and map all the raw data
@@ -60,30 +60,32 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   #####################################################################
   # Make plots
   #####################################################################
-  print("Making figures")
-  
-  make_plot = function(mapping, segments, plot_title, max.plot.cn) {
-    print(plot_title)
-    if (!is.na(mapping)) {
-      cn_bb = collapse2bb(segments=segments, cn_states=mapping$cn_states)
-    } else {
-      cn_bb = parse_dummy_cn_profile()
+  if (make_figures) {
+    print("Making figures")
+    
+    make_plot = function(mapping, segments, plot_title, max.plot.cn) {
+      print(plot_title)
+      if (!is.na(mapping)) {
+        cn_bb = collapse2bb(segments=segments, cn_states=mapping$cn_states)
+      } else {
+        cn_bb = parse_dummy_cn_profile()
+      }
+      plot = plot_profile(cn_bb, plot_title, max.plot.cn=max.plot.cn)
+      return(plot)
     }
-    plot = plot_profile(cn_bb, plot_title, max.plot.cn=max.plot.cn)
-    return(plot)
+    
+    plot_vanloowedge = make_plot(map_vanloowedge, segments, "Battenberg", max.plot.cn)
+    plot_broad = make_plot(map_broad, segments, "ABSOLUTE", max.plot.cn)
+    plot_dkfz = make_plot(map_dkfz, segments, "ACEseq", max.plot.cn)
+    plot_mustonen = make_plot(map_mustonen, segments, "CloneHD", max.plot.cn)
+    plot_peifer = make_plot(map_peifer, segments, "Sclust", max.plot.cn)
+    print("Done plot profile")
+    
+    png(file.path(outdir, "figures", paste0(samplename, "_copynumber_complete.png")), height=1500, width=1300)
+    grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, ncol=1), 
+                 top=textGrob(samplename, gp = gpar(fontsize=25, face=2, col="black")))
+    dev.off()
   }
-  
-  plot_vanloowedge = make_plot(map_vanloowedge, segments, "Battenberg", max.plot.cn)
-  plot_broad = make_plot(map_broad, segments, "ABSOLUTE", max.plot.cn)
-  plot_dkfz = make_plot(map_dkfz, segments, "ACEseq", max.plot.cn)
-  plot_mustonen = make_plot(map_mustonen, segments, "CloneHD", max.plot.cn)
-  plot_peifer = make_plot(map_peifer, segments, "Sclust", max.plot.cn)
-  print("Done plot profile")
-  
-  png(file.path(outdir, "figures", paste0(samplename, "_copynumber_complete.png")), height=1500, width=1300)
-  grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, ncol=1), 
-               top=textGrob(samplename, gp = gpar(fontsize=25, face=2, col="black")))
-  dev.off()
   
   #####################################################################
   # Make rounded clonal copy number
@@ -150,38 +152,45 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     if (all(rounded_clonal[[i]]$copy_number==-2)) {
       next
     } else {
-      write.table(rounded_clonal[[i]], file=file.path(outdir, paste0(cn_method, "_rounded_clonal"), paste0(samplename, "_segments.txt")), quote=F, sep="\t", row.names=F)
+      if (rounding_up) {
+        dir_postfix = paste0(cn_method, "_rounded_clonal")
+      } else {
+        dir_postfix = paste0(cn_method, "_rounded_clonal_alt")
+      }
+      write.table(rounded_clonal[[i]], file=file.path(outdir, dir_postfix, paste0(samplename, "_segments.txt")), quote=F, sep="\t", row.names=F)
     }
   }
   
   #####################################################################
   # Plot rounded clonal
   #####################################################################
-  print("Making figures - rounded")
-  print("Battenberg")
-  cn_bb_vanloowedge = collapseRoundedClonal2bb(cn_states=rounded_clonal$vanloowedge)
-  plot_vanloowedge = plot_profile(cn_bb_vanloowedge, "Battenberg", max.plot.cn=max.plot.cn)
-  
-  print("ABSOLUTE")
-  cn_bb_broad = collapseRoundedClonal2bb(cn_states=rounded_clonal$broad)
-  plot_broad = plot_profile(cn_bb_broad, "ABSOLUTE", max.plot.cn=max.plot.cn)
-  
-  print("ACEseq")
-  cn_bb_dkfz = collapseRoundedClonal2bb(cn_states=rounded_clonal$dkfz)
-  plot_dkfz = plot_profile(cn_bb_dkfz, "ACEseq", max.plot.cn=max.plot.cn)
-  
-  print("CloneHD")
-  cn_bb_mustonen = collapseRoundedClonal2bb(cn_states=rounded_clonal$mustonen)
-  plot_mustonen = plot_profile(cn_bb_mustonen, "CloneHD", max.plot.cn=max.plot.cn)
-  
-  print("Sclust")
-  cn_bb_peifer = collapseRoundedClonal2bb(cn_states=rounded_clonal$peifer)
-  plot_peifer = plot_profile(cn_bb_peifer, "Sclust", max.plot.cn=max.plot.cn)
-  
-  png(file.path(outdir, "figures", paste0(samplename, "_copynumber_rounded_clonal.png")), height=1500, width=1300)
-  grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, ncol=1), 
-               top=textGrob(samplename, gp = gpar(fontsize=25, face=2, col="black")))
-  dev.off()
+  if (make_figures) {
+    print("Making figures - rounded")
+    print("Battenberg")
+    cn_bb_vanloowedge = collapseRoundedClonal2bb(cn_states=rounded_clonal$vanloowedge)
+    plot_vanloowedge = plot_profile(cn_bb_vanloowedge, "Battenberg", max.plot.cn=max.plot.cn)
+    
+    print("ABSOLUTE")
+    cn_bb_broad = collapseRoundedClonal2bb(cn_states=rounded_clonal$broad)
+    plot_broad = plot_profile(cn_bb_broad, "ABSOLUTE", max.plot.cn=max.plot.cn)
+    
+    print("ACEseq")
+    cn_bb_dkfz = collapseRoundedClonal2bb(cn_states=rounded_clonal$dkfz)
+    plot_dkfz = plot_profile(cn_bb_dkfz, "ACEseq", max.plot.cn=max.plot.cn)
+    
+    print("CloneHD")
+    cn_bb_mustonen = collapseRoundedClonal2bb(cn_states=rounded_clonal$mustonen)
+    plot_mustonen = plot_profile(cn_bb_mustonen, "CloneHD", max.plot.cn=max.plot.cn)
+    
+    print("Sclust")
+    cn_bb_peifer = collapseRoundedClonal2bb(cn_states=rounded_clonal$peifer)
+    plot_peifer = plot_profile(cn_bb_peifer, "Sclust", max.plot.cn=max.plot.cn)
+    
+    png(file.path(outdir, "figures", paste0(samplename, "_copynumber_rounded_clonal.png")), height=1500, width=1300)
+    grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, ncol=1), 
+                 top=textGrob(samplename, gp = gpar(fontsize=25, face=2, col="black")))
+    dev.off()
+  }
 }
 
 
@@ -195,6 +204,7 @@ args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
 rounding_up = as.logical(args[3])
+make_figures = as.logical(args[4])
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # setwd("/nfs/users/nfs_c/cgppipe/pancancer/workspace/sd11/icgc_pancan_full/consensus_copynumber/2016_09_consensus_breakpoints_fullruns/20161024_rounding/")
@@ -238,7 +248,15 @@ breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 if (file.exists(breakpoints_file)) {
   breakpoints = read.table(breakpoints_file, header=T, stringsAsFactors=F)
   segments = breakpoints2segments(breakpoints)
-  create_rounded_copynumber(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4, rounding_up=rounding_up)
+  create_rounded_copynumber(samplename, 
+                            segments, 
+                            outdir, 
+                            method_segmentsfile, 
+                            method_purityfile, 
+                            method_baflogr, 
+                            max.plot.cn=4, 
+                            rounding_up=rounding_up, 
+                            make_figures=make_figures)
 }
 
 q(save="no")
