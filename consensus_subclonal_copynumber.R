@@ -155,7 +155,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
       if (rounding_up) {
         dir_postfix = paste0(cn_method, "_rounded_clonal")
       } else {
-        dir_postfix = paste0(cn_method, "_rounded_clonal_alt")
+        dir_postfix = paste0(cn_method, "_rounded_alt_clonal")
       }
       write.table(rounded_clonal[[i]], file=file.path(outdir, dir_postfix, paste0(samplename, "_segments.txt")), quote=F, sep="\t", row.names=F)
     }
