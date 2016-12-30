@@ -6,7 +6,7 @@ suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(parallel))
 
 # Static for plot
-RECT_HEIGHT = 0.15
+RECT_HEIGHT = 0.07
 
 breakpoints2segments = function(breakpoints) {
   segments = data.frame()
@@ -42,6 +42,16 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
       dat$minor_cn[below_subclonal_threshold] = round(dat$minor_cn[below_subclonal_threshold])
       dat$copy_number[below_subclonal_threshold] = dat$major_cn[below_subclonal_threshold] + dat$minor_cn[below_subclonal_threshold]
     }
+    
+    # Replace 23 and 24 with X and Y
+    if (23 %in% dat$chromosome) {
+      dat$chromosome[dat$chromosome==23] = "X"
+    }
+    
+    if (24 %in% dat$chromosome) {
+      dat$chromosome[dat$chromosome==24] = "Y"
+    }
+    
     return(dat)
   } else {
     return(NA)
@@ -50,14 +60,14 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
 
 parse_dkfz_purity = function(purityfile, samplename) {
   purity = read.table(purityfile, header=F, stringsAsFactors=F)
-  purity = purity[purity$V1==samplename,4]
+  purity = purity[purity$V1==samplename,3]
   if (length(purity)==0) {
     purity = NA
   }
   return(purity)
 }
 
-parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
+parse_vanloowedge = function(segmentsfile, purityfile, samplename, sex) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     purity = parse_vanloowedge_purity(purityfile, samplename)
@@ -70,6 +80,12 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename) {
     } else {
       # Annotations don't need any adjustments
     }
+    
+    # Remove calls for X as it is a combination of X and Y
+    if (sex=="male") {
+      dat = dat[dat$chromosome != "X",]
+    }
+    
     return(dat)
   } else {
     return(NA)
@@ -122,10 +138,12 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     dat = read.table(segmentsfile, header=has_header, stringsAsFactors=F)
     if (!has_header) {
       colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence")
+      # Remove 1bp segments
+      dat = dat[dat$end-dat$start > 0,]
       # Add 1 so that segments do not overlap
       dat$end = dat$end - 1
     }
-    purity = parse_mustonen_purity(purityfile)
+    purity = parse_mustonen_purity(purityfile, samplename)
     dat$ccf = dat$cellular_prevalence / purity
     
     # Apply a few filters to get rid of artifacts
@@ -134,17 +152,28 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     dat = dat[!(dat$chromosome=="14" & dat$start==1),]
     dat = dat[!(dat$chromosome=="15" & dat$start==1),]
     dat = dat[!(dat$chromosome=="21" & dat$start==1),]
+    
+    # Replace 23 and 24 with X and Y
+    if (23 %in% dat$chromosome) {
+      dat$chromosome[dat$chromosome==23] = "X"
+    }
+    
+    if (24 %in% dat$chromosome) {
+      dat$chromosome[dat$chromosome==24] = "Y"
+    }
+    
     return(dat)
   } else {
     return(NA)
   }
 }
 
-parse_mustonen_purity = function(purityfile) {
-  purity = read.table(purityfile, header=F, stringsAsFactors=F)[1,2]
-  if (length(purity)==0) {
-    purity = NA
-  }
+parse_mustonen_purity = function(purityfile, samplename) {
+  purity = read.table(purityfile, header=T, stringsAsFactors=F)#[1,2]
+  purity = unique(purity[purity$sample==samplename,]$purity)
+  # if (length(purity)==0) {
+  #   purity = NA
+  # }
   return(purity)
 }
 
@@ -181,7 +210,7 @@ parse_broad_purity = function(purityfile, samplename) {
   return(purity)
 }
 
-parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, round_dkfz=T, num_threads=1) {
+parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex, mustonen_has_header=F, round_dkfz=T, num_threads=1) {
 
   do_mapping = function(index, all_dat, method_names, segments) {
     dat = all_dat[[index]]
@@ -195,7 +224,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
   }
   
   dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=round_dkfz)
-  dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename)
+  dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename, sex)
   dat_peifer = parse_peifer(method_segmentsfile[["peifer"]], method_purityfile[["peifer"]], samplename)
   dat_mustonen = parse_mustonen(method_segmentsfile[["mustonen"]], method_purityfile[["mustonen"]], samplename, has_header=mustonen_has_header)
   dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
@@ -244,7 +273,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
 parse_all_purities = function(samplename, method_purityfile) {
   purity_broad = parse_broad_purity(method_purityfile[["broad"]], samplename)
   purity_dkfz = parse_dkfz_purity(method_purityfile[["dkfz"]], samplename)
-  purity_mustonen = parse_mustonen_purity(method_purityfile[["mustonen"]])
+  purity_mustonen = parse_mustonen_purity(method_purityfile[["mustonen"]], samplename)
   purity_peifer = parse_peifer_purity(method_purityfile[["peifer"]], samplename)
   purity_vanloowedge = parse_vanloowedge_purity(method_purityfile[["vanloowedge"]], samplename)
   return(list(broad=purity_broad, dkfz=purity_dkfz, mustonen=purity_mustonen, peifer=purity_peifer, vanloowedge=purity_vanloowedge))
@@ -384,7 +413,8 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           return(list(cn_states=NULL, status=NULL))
         }
         
-        temp_segs = merge_broad_segments(cn_segments, overlap, bp_segments[i,,drop=F])
+        # temp_segs = merge_broad_segments(cn_segments, overlap, bp_segments[i,,drop=F])
+        temp_segs = cn_segments[queryHits(overlap),,drop=F]
         if (nrow(temp_segs) == 1) {
           status = "clonal"
           cn_states = list(temp_segs)
@@ -583,8 +613,11 @@ plot_profile = function(subclones, method_name, max.plot.cn=3) {
     geom_hline(data=data.frame(y=seq(0,max.plot.cn,0.5)), mapping=aes(slope=0, yintercept=y), colour="black", alpha=0.3) +
     # Not plotting the major allele
     # geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=plot_maj, ymax=(plot_maj+RECT_HEIGHT)), fill="purple") +
-    geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=plot_min-RECT_HEIGHT, ymax=(plot_min)), fill="#2f4f4f") +
-    geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=plot_cn_total, ymax=(plot_cn_total+RECT_HEIGHT)), fill="#E69F00") +
+    # Removed shifting to prevent overplotting
+    # geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=plot_min-RECT_HEIGHT, ymax=(plot_min)), fill="#2f4f4f") +
+    # geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=plot_cn_total, ymax=(plot_cn_total+RECT_HEIGHT)), fill="#E69F00") +
+    geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=(plot_min-RECT_HEIGHT), ymax=(plot_min+RECT_HEIGHT)), fill="#2f4f4f") +
+    geom_rect(mapping=aes(xmin=startpos, xmax=endpos, ymin=(plot_cn_total-RECT_HEIGHT), ymax=(plot_cn_total+RECT_HEIGHT)), fill="#E69F00") +
     facet_grid(~chr, scales="free_x", space = "free_x") +
     scale_y_continuous(breaks=0:max.plot.cn, limits=c(-0.2,max.plot.cn), name="Copy Number") +
     theme_bw() + theme(axis.title.x=element_blank(),

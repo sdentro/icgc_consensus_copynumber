@@ -4,12 +4,12 @@ source("~/repo/icgc_consensus_copynumber/util.R")
 #####################################################################
 # Rounded CN main method
 #####################################################################
-create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, max.plot.cn=4, rounding_up=T, make_figures=T) {
+create_rounded_copynumber = function(samplename, segments, outdir, method_segmentsfile, method_purityfile, method_baflogr, sex, max.plot.cn=4, rounding_up=T, make_figures=T) {
   
   #####################################################################
   # Read in and map all the raw data
   #####################################################################
-  res = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr)
+  res = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex)
   map_dkfz = res$map_dkfz
   map_mustonen = res$map_mustonen
   map_peifer = res$map_peifer
@@ -29,16 +29,16 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   # Make inventory
   #####################################################################
   
-  all_clonal = apply(combined_status[,c("dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="clonal") })
+  all_clonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="clonal") })
   all_clonal[is.na(all_clonal)] = F
-  all_subclonal = apply(combined_status[,c("dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="subclonal") })
+  all_subclonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="subclonal") })
   all_subclonal[is.na(all_subclonal)] = F
-  any_na = apply(combined_status[,c("dkfz", "peifer", "vanloowedge")], 1, function(x) { any(is.na(x)) })
-  one_subclonal = apply(combined_status[,c("dkfz", "peifer", "vanloowedge")], 1, function(x) { sum(x=="subclonal")==1 })
+  any_na = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { any(is.na(x)) })
+  one_subclonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { sum(x=="subclonal")==1 })
   one_subclonal[is.na(one_subclonal)] = F
-  two_subclonal = apply(combined_status[,c("dkfz", "peifer", "vanloowedge")], 1, function(x) { sum(x=="subclonal")==2 })
+  two_subclonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { sum(x=="subclonal")==2 })
   two_subclonal[is.na(two_subclonal)] = F
-  three_subclonal = apply(combined_status[,c("dkfz", "peifer", "vanloowedge")], 1, function(x) { sum(x=="subclonal")==3 })
+  three_subclonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { sum(x=="subclonal")==3 })
   three_subclonal[is.na(three_subclonal)] = F
   
   # sanity check
@@ -205,10 +205,15 @@ samplename = args[1]
 outdir = args[2]
 rounding_up = as.logical(args[3])
 make_figures = as.logical(args[4])
+sex = args[5]
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # setwd("/nfs/users/nfs_c/cgppipe/pancancer/workspace/sd11/icgc_pancan_full/consensus_copynumber/2016_09_consensus_breakpoints_fullruns/20161024_rounding/")
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+
+# setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
+# samplename = "003819bc-c415-4e76-887c-931d60ed39e7"
+# sex = "female"
 # outdir = "output"
 
 
@@ -218,7 +223,8 @@ vanloowedge_segmentsfile = paste0("vanloowedge/", samplename, "_segments.txt")
 vanloowedge_purityfile = "purity_ploidy_vanloowedge.txt"
 peifer_segmentsfile = paste0("peifer/", samplename, "_segments.txt")
 peifer_purityfile = "purity_ploidy_peifer.txt"
-mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
+#mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
+mustonen_segmentsfile = paste0("mustonen/", samplename, "_segments.txt")
 mustonen_purityfile = "purity_ploidy_mustonen.txt"
 broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
 broad_purityfile = "purity_ploidy_broad.txt"
@@ -254,6 +260,7 @@ if (file.exists(breakpoints_file)) {
                             method_segmentsfile, 
                             method_purityfile, 
                             method_baflogr, 
+                            sex,
                             max.plot.cn=4, 
                             rounding_up=rounding_up, 
                             make_figures=make_figures)
