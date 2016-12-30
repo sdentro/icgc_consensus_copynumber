@@ -254,6 +254,7 @@ num_threads=1
 args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
+sex = args[3]
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # outdir = "./"
@@ -305,7 +306,7 @@ if (file.exists(breakpoints_file)) {
   method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
                         broad=broad_baflogrfile)
   
-  all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, mustonen_has_header=F, num_threads=num_threads)
+  all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex=sex, mustonen_has_header=F, num_threads=num_threads)
   
   print("Getting clonal agreement...")
   agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments)
@@ -338,7 +339,7 @@ if (file.exists(breakpoints_file)) {
                              mustonen=mustonen_segmentsfile,
                              broad=broad_segmentsfile)
   
-  all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=T, num_threads=num_threads)
+  all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
   agreement_rounded = get_frac_genome_agree(samplename, all_data_rounded, segments, method_overruled=method_overruled)
   
   #####################################################################
@@ -352,7 +353,7 @@ if (file.exists(breakpoints_file)) {
   mustonen_segmentsfile = paste0(outdir, "mustonen_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   broad_segmentsfile = paste0(outdir, "broad_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   
-  all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=T, num_threads=num_threads)
+  all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
   agreement_rounded_alt = get_frac_genome_agree(samplename, all_data_rounded_alt, segments, method_overruled=method_overruled)
   
   #####################################################################
