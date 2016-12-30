@@ -526,8 +526,11 @@ if (file.exists(breakpoints_file)) {
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
   consensus_profile = data.frame(segments, consensus_profile)
   
-  print(head(consensus_profile))
-  if (any(consensus_profile$major_cn < 0 | consensus_profile$minor_cn < 0)) {
+  is_major_negative = consensus_profile$major_cn < 0
+  is_minor_negative = consensus_profile$minor_cn < 0
+  is_major_negative[is.na(is_major_negative)] = F
+  is_minor_negative[is.na(is_minor_negative)] = F
+  if (any(is_major_negative | is_minor_negative)) {
     print(paste0(samplename, " contains segments with CN state lower than 1"))
   }
   
