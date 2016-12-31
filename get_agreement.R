@@ -308,7 +308,6 @@ get_ploidy = function(segments, map, broad=F) {
 
 library(readr)
 source("~/repo/icgc_consensus_copynumber/util.R")
-source("~/repo/icgc_consensus_copynumber/consensus_profile.R")
 max.plot.cn=4
 num_threads=1
 
