@@ -284,6 +284,11 @@ sex = args[3]
 # samplename = "003819bc-c415-4e76-887c-931d60ed39e7"
 # sex = "female"
 # outdir = "output"
+
+
+samplename = "007aab66-2f07-459d-8952-3041d6ea24a8"
+sex = "female"
+
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz"
 # Max allowed deviation from the expected ploidy
@@ -471,9 +476,13 @@ if (file.exists(breakpoints_file)) {
       # Separate approaches for X, Y and autosomes
       if (segments$chromosome[i]=="X") {
         print("Found X")
+        new_entry = data.frame(major_cn=NA, minor_cn=NA, star=NA, level=NA, broad_baf=NA, broad_logr=NA, vanloowedge_baf=NA, vanloowedge_logr=NA)
+        consensus_profile = rbind(consensus_profile, new_entry)
         
       } else if (segments$chromosome[i]=="Y") {
         print("Found Y")
+        new_entry = data.frame(major_cn=NA, minor_cn=NA, star=NA, level=NA, broad_baf=NA, broad_logr=NA, vanloowedge_baf=NA, vanloowedge_logr=NA)
+        consensus_profile = rbind(consensus_profile, new_entry)
         
       } else {
       
@@ -485,7 +494,7 @@ if (file.exists(breakpoints_file)) {
           
         } else if (agreement_clonal_exclude_1$agree[i]) {
           # if clonal agree except 1, choose that and assign 3*
-          new_entry = agreement_clonal$cn_states[[i]][1,2:3]
+          new_entry = agreement_clonal_exclude_1$cn_states[[i]][1,2:3]
           new_entry$star = 3
           new_entry$level = "b"       
           
@@ -522,7 +531,7 @@ if (file.exists(breakpoints_file)) {
         }
         
         
-        if (!is.null(map_broad_baflogr$cn_states[[i]])) {
+        if (!is.null(map_broad_baflogr$cn_states[[i]]) && !is.na(map_broad_baflogr$cn_states[[i]])) {
           new_entry$broad_baf = map_broad_baflogr$cn_states[[i]][[1]][1,4]
           new_entry$broad_logr = map_broad_baflogr$cn_states[[i]][[1]][1,5]
         } else {
@@ -530,7 +539,7 @@ if (file.exists(breakpoints_file)) {
           new_entry$broad_logr = NA
         }
         
-        if (!is.null(map_vanloowedge_baflogr$cn_states[[i]])) {
+        if (!is.null(map_vanloowedge_baflogr$cn_states[[i]]) && !is.na(map_vanloowedge_baflogr$cn_states[[i]])) {
           new_entry$vanloowedge_baf = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,4]
           new_entry$vanloowedge_logr = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,5]
         } else {

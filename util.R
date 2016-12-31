@@ -246,6 +246,15 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
     if (file.exists(method_baflogr$vanloowedge)) {
       baflogr_vanloowedge = read.table(method_baflogr$vanloowedge, header=T, stringsAsFactors=F)
       map_vanloowedge_baflogr = mapdata(segments, baflogr_vanloowedge)
+      
+      # Pad empty data in case last segments / chromosomes were not reported on
+      if (length(map_vanloowedge_baflogr$cn_states) < nrow(segments)) {
+        for (i in length(map_vanloowedge_baflogr$cn_states):nrow(segments)) {
+          map_vanloowedge_baflogr$cn_states[[i]] = NA
+          map_vanloowedge_baflogr$status[i] = NA
+        }
+      }
+      
     } else { 
       map_vanloowedge_baflogr = NA
     }
@@ -253,6 +262,14 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
     if (file.exists(method_baflogr$broad)) {
       baflogr_broad = read.table(method_baflogr$broad, header=T, stringsAsFactors=F)
       map_broad_baflogr = mapdata(segments, baflogr_broad)
+      
+      # Pad empty data in case last segments / chromosomes were not reported on
+      if (length(map_broad_baflogr$cn_states) < nrow(segments)) {
+        for (i in length(map_broad_baflogr$cn_states):nrow(segments)) {
+          map_broad_baflogr$cn_states[[i]] = NA
+          map_broad_baflogr$status[i] = NA
+        }
+      }
     } else { 
       map_broad_baflogr = NA
     }
