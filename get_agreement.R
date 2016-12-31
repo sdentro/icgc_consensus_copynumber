@@ -286,8 +286,8 @@ sex = args[3]
 # outdir = "output"
 
 
-samplename = "007aab66-2f07-459d-8952-3041d6ea24a8"
-sex = "female"
+# samplename = "007aab66-2f07-459d-8952-3041d6ea24a8"
+# sex = "female"
 
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz"
