@@ -771,6 +771,8 @@ calc_ploidy = function(subclones) {
   return(ploidy)
 }
 
+
+
 get_ploidy_status = function(subclones, min_frac_genome_state=0.2) {
   seg_length = (subclones$endpos/1000)-(subclones$startpos/1000)
   is_clonal = is.na(subclones$frac2_A) & !is.na(subclones$nMaj1_A)
@@ -787,5 +789,14 @@ get_ploidy_status = function(subclones, min_frac_genome_state=0.2) {
     status = "other"
   }
   return(status)
+}
+
+get_ploidy = function(segments, map, broad=F) {
+  if (!is.na(map)) {
+    cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
+    return(list(ploidy=round(calc_ploidy(cn_bb), 4), status=get_ploidy_status(cn_bb)))
+  } else {
+    return(list(ploidy=NA, status=NA))
+  }
 }
 

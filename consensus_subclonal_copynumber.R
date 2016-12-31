@@ -16,6 +16,18 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   map_vanloowedge = res$map_vanloowedge
   map_broad = res$map_broad
   
+  # Calc ploidy of all profiles
+  ploidy_vanloowedge = get_ploidy(segments, res$map_vanloowedge)
+  ploidy_broad = get_ploidy(segments, res$map_broad, broad=T)
+  ploidy_peifer = get_ploidy(segments, res$map_peifer)
+  ploidy_dkfz = get_ploidy(segments, res$map_dkfz)
+  ploidy_mustonen = get_ploidy(segments, res$map_mustonen)
+  
+  ploidies = data.frame(samplename=samplename,
+                        ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy,
+                        status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status)
+  write.table(ploidies, file=file.path(outdir, "raw_ploidy", paste0(samplename, "_raw_ploidy.txt")), sep="\t", quote=F, row.names=F)
+  
   res = parse_all_purities(samplename, method_purityfile)
   purity_dkfz = res$dkfz
   purity_vanloowedge = res$vanloowedge
@@ -246,10 +258,6 @@ method_purityfile = list(dkfz=dkfz_purityfile,
 method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
                       broad=broad_baflogrfile)
 
-# outdir = "output"
-# samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
-# samplename = "0b811c6a-8f05-44bd-ac33-fb720d189e71"
-# breakpoints_file = file.path("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/complete_run/consensus_bp", paste0(samplename, ".txt"))
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 if (file.exists(breakpoints_file)) {
   breakpoints = read.table(breakpoints_file, header=T, stringsAsFactors=F)

@@ -23,7 +23,10 @@
 #   cn_states = res$cn_states
 # }
 
-get_frac_genome_agree = function(samplename, all_data, segments, min_methods_with_call_on_segment=2, method_overruled=NA) {
+#' @param min_methods_agree The minimum number of methods that is required to agree
+#' @param min_methods_with_call_on_segment The minimum number of methods with a call for a segment to be considered for agreement
+#' @param method_overruled A data frame with a single row and a column per method. Each cell contains TRUE if the method is to be overruled
+get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agree=0, min_methods_with_call_on_segment=2, method_overruled=NA) {
   # breakpoints = read.table(paste0(samplename, "_consensus_breakpoints.txt"), header=T, stringsAsFactors=F)
   # segments = breakpoints2segments(breakpoints)
 
@@ -50,8 +53,16 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_wit
 
     # Order of methods is: dkfz, mustonen, peifer, vanloowedge, broad
     methods_with_result = (4:8)[!is.na(combined_status[i,4:8])]
+    
+    # If no methods report a result, skip
+    if (length(methods_with_result)==0) {
+      next
+    }
+    
     # All methods agree
-    all_methods_agree = length(methods_with_result) >= min_methods_with_call_on_segment && all(combined_status[i,methods_with_result]=="clonal")
+    all_methods_agree = length(methods_with_result) >= min_methods_with_call_on_segment &
+                        sum(combined_status[i,methods_with_result]=="clonal", na.rm=T) >= min_methods_agree &
+                        all(combined_status[i,methods_with_result]=="clonal")
     
     if (!is.na(method_overruled)) {
       # All overruled methods agree - but it must be more than 50% of methods and at least the minimum number
@@ -82,7 +93,7 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_wit
       
       cn_states[[i]] = inventory
       inventory = na.omit(inventory)
-      agree[i] = all(inventory$major_cn==inventory$major_cn[1]) & all(inventory$minor_cn==inventory$minor_cn[1]) & nrow(inventory)>0
+      agree[i] = all(inventory$major_cn==inventory$major_cn[1]) & all(inventory$minor_cn==inventory$minor_cn[1]) & nrow(inventory)>0 & inventory$major_cn[1] > -1 & inventory$minor_cn[1] > -2
       num_methods[i] = nrow(inventory)
     } 
   }
@@ -240,6 +251,15 @@ test_purities = function(purities, consensus_profile) {
   return(output)
 }
 
+get_ploidy = function(segments, map, broad=F) {
+  if (!is.na(map)) {
+    cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
+    return(list(ploidy=round(calc_ploidy(cn_bb), 4), status=get_ploidy_status(cn_bb)))
+  } else {
+    return(list(ploidy=NA, status=NA))
+  }
+}
+
 #####################################################################
 # Original agreement
 #####################################################################
@@ -259,7 +279,15 @@ sex = args[3]
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # outdir = "./"
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
+
+# setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
+# samplename = "003819bc-c415-4e76-887c-931d60ed39e7"
+# sex = "female"
+# outdir = "output"
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
+expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz"
+# Max allowed deviation from the expected ploidy
+max_expected_ploidy_diff = 0.5
 
 # Table with overrulings 
 # overrulings_pivot = readr::read_tsv("~/Documents/Projects/icgc/consensus_subclonal_copynumber/manual_review_overrulings_pivot_table.txt")
@@ -284,7 +312,7 @@ if (file.exists(breakpoints_file)) {
   vanloowedge_purityfile = "purity_ploidy_vanloowedge.txt"
   peifer_segmentsfile = paste0("peifer/", samplename, "_segments.txt")
   peifer_purityfile = "purity_ploidy_peifer.txt"
-  mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
+  mustonen_segmentsfile = paste0("mustonen/", samplename, "_segments.txt")
   mustonen_purityfile = "purity_ploidy_mustonen.txt"
   broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
   broad_purityfile = "purity_ploidy_broad.txt"
@@ -308,16 +336,80 @@ if (file.exists(breakpoints_file)) {
   
   all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex=sex, mustonen_has_header=F, num_threads=num_threads)
   
+  # Calc ploidy of all profiles and overrule those that are not concordant
+  ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
+  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T)
+  ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
+  ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
+  ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
+  
   print("Getting clonal agreement...")
-  agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments)
+  agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments, min_methods_agree=5)
+  
+  #####################################################################
+  # Agreement exclude 1
+  #####################################################################
+  print("Getting exclude 1 agreement...")
+  agreement_clonal_exclude_1 = get_frac_genome_agree(samplename, all_data_clonal, segments, min_methods_agree=4)
   
   #####################################################################
   # Agreement after excluding overruled profiles
   #####################################################################
+  expected_ploidy = read.table(expected_ploidy_file, header=T, stringsAsFactors=F)
+  expected_ploidy = expected_ploidy[expected_ploidy$samplename==samplename, "ploidy"]
+  overrulings = list(broad=F, mustonen=F, dkfz=F, peifer=F, vanloowedge=F)
+  # Compare to expected
+  if (length(expected_ploidy) > 0) {
+    if (abs(ploidy_vanloowedge$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+      print("Overruling Battenberg ploidy")
+      all_data_clonal$map_vanloowedge = NA
+      all_data_clonal$dat_vanloowedge = NA
+      overrulings$vanloowedge = T
+    }
+    
+    if (abs(ploidy_broad$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+      print("Overruling ABSOLUTE ploidy")
+      all_data_clonal$map_broad = NA
+      all_data_clonal$dat_broad = NA
+      overrulings$broad = T
+    }
+    
+    if (abs(ploidy_dkfz$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+      print("Overruling ACEseq ploidy")
+      all_data_clonal$map_dkfz = NA
+      all_data_clonal$dat_dkfz = NA
+      overrulings$dkfz = T
+    }
+    
+    if (abs(ploidy_peifer$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+      print("Overruling Sclust ploidy")
+      all_data_clonal$map_peifer = NA
+      all_data_clonal$dat_peifer = NA
+      overrulings$peifer = T
+    }
+    
+    if (abs(ploidy_mustonen$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+      print("Overruling CloneHD ploidy")
+      all_data_clonal$map_mustonen = NA
+      all_data_clonal$dat_mustonen = NA
+      overrulings$mustonen = T
+    }
+  }
+  method_overruled = data.frame(t(data.frame(unlist(overrulings))), stringsAsFactors=F)
+  row.names(method_overruled) = NULL
+  
   print("Getting exclude overruled agreement...")
   # Check that there is an entry and that there is at least one method overruled
-  if (nrow(overrulings_pivot)==1 & sum(!is.na(overrulings_pivot)) > 1) {
-    agreement_clonal_overrule = get_frac_genome_agree(samplename, all_data_clonal, segments, method_overruled=method_overruled)
+  # In this case we exclude the overruled methods, and we accept if all others agree if there are a required
+  # minimum number of methods with a call
+  # if (nrow(overrulings_pivot)==1 & sum(!is.na(overrulings_pivot)) > 1) {
+  if (any(unlist(overrulings))) {
+    agreement_clonal_overrule = get_frac_genome_agree(samplename, 
+                                                      all_data_clonal, 
+                                                      segments, 
+                                                      method_overruled=method_overruled, 
+                                                      min_methods_with_call_on_segment=3, 
+                                                      min_methods_agree=sum(!is.na(method_overruled)))
   } else {
     # No methods have been overruled for this sample - so clonal agreement it is
     agreement_clonal_overrule = agreement_clonal
@@ -327,17 +419,17 @@ if (file.exists(breakpoints_file)) {
   # Agreement after rounding
   #####################################################################
   print("Getting rounded agreement...")
-  dkfz_segmentsfile = paste0(outdir, "dkfz_rounded_clonal/", paste0(samplename, "_segments.txt"))
-  vanloowedge_segmentsfile = paste0(outdir, "vanloowedge_rounded_clonal/", paste0(samplename, "_segments.txt"))
-  peifer_segmentsfile = paste0(outdir, "peifer_rounded_clonal/", paste0(samplename, "_segments.txt"))
-  mustonen_segmentsfile = paste0(outdir, "mustonen_rounded_clonal/", paste0(samplename, "_segments.txt"))
-  broad_segmentsfile = paste0(outdir, "broad_rounded_clonal/", paste0(samplename, "_segments.txt"))
+  dkfz_segmentsfile = file.path(outdir, "dkfz_rounded_clonal", paste0(samplename, "_segments.txt"))
+  vanloowedge_segmentsfile = file.path(outdir, "vanloowedge_rounded_clonal", paste0(samplename, "_segments.txt"))
+  peifer_segmentsfile = file.path(outdir, "peifer_rounded_clonal", paste0(samplename, "_segments.txt"))
+  mustonen_segmentsfile = file.path(outdir, "mustonen_rounded_clonal", paste0(samplename, "_segments.txt"))
+  broad_segmentsfile = file.path(outdir, "broad_rounded_clonal", paste0(samplename, "_segments.txt"))
   
-  method_segmentsfile = list(dkfz=dkfz_segmentsfile,
-                             vanloowedge=vanloowedge_segmentsfile,
-                             peifer=peifer_segmentsfile,
-                             mustonen=mustonen_segmentsfile,
-                             broad=broad_segmentsfile)
+  method_segmentsfile = list(dkfz=ifelse(!overrulings$dkfz, dkfz_segmentsfile, NA),
+                             vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
+                             peifer=ifelse(!overrulings$peifer, peifer_segmentsfile, NA),
+                             mustonen=ifelse(!overrulings$mustonen, mustonen_segmentsfile, NA),
+                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA))
   
   all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
   agreement_rounded = get_frac_genome_agree(samplename, all_data_rounded, segments, method_overruled=method_overruled)
@@ -347,11 +439,17 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Load previously generated alternate rounded profile and perform the mapping, the code below should consider this as well
   print("Getting alt rounded agreement...")
-  dkfz_segmentsfile = paste0(outdir, "dkfz_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
-  vanloowedge_segmentsfile = paste0(outdir, "vanloowedge_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
-  peifer_segmentsfile = paste0(outdir, "peifer_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
-  mustonen_segmentsfile = paste0(outdir, "mustonen_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
-  broad_segmentsfile = paste0(outdir, "broad_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  dkfz_segmentsfile = file.path(outdir, "dkfz_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  vanloowedge_segmentsfile = file.path(outdir, "vanloowedge_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  peifer_segmentsfile = file.path(outdir, "peifer_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  mustonen_segmentsfile = file.path(outdir, "mustonen_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  broad_segmentsfile = file.path(outdir, "broad_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  
+  method_segmentsfile = list(dkfz=ifelse(!overrulings$dkfz, dkfz_segmentsfile, NA),
+                             vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
+                             peifer=ifelse(!overrulings$peifer, peifer_segmentsfile, NA),
+                             mustonen=ifelse(!overrulings$mustonen, mustonen_segmentsfile, NA),
+                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA))
   
   all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
   agreement_rounded_alt = get_frac_genome_agree(samplename, all_data_rounded_alt, segments, method_overruled=method_overruled)
@@ -365,7 +463,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Piece together a complete agreement profile
   #####################################################################
-  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
+  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_exclude_1, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     for (i in 1:length(r)) {
@@ -380,41 +478,47 @@ if (file.exists(breakpoints_file)) {
       } else {
       
         if (agreement_clonal$agree[i]) {
-          # if clonal agree, choose that and assign 1*
+          # if clonal agree, choose that and assign 3*
           new_entry = agreement_clonal$cn_states[[i]][1,2:3]
           new_entry$star = 3
           new_entry$level = "a"
+          
+        } else if (agreement_clonal_exclude_1$agree[i]) {
+          # if clonal agree except 1, choose that and assign 3*
+          new_entry = agreement_clonal$cn_states[[i]][1,2:3]
+          new_entry$star = 3
+          new_entry$level = "b"       
           
         } else if (agreement_clonal_overrule$agree[i]) {
           # pivot table
           new_entry = agreement_clonal_overrule$cn_states[[i]][1,2:3]
           new_entry$star = 3
-          new_entry$level = "b"
+          new_entry$level = "c"
           
         } else if (agreement_rounded$agree[i]) {
           # else if rounded clonal agree, choose that and assign 2*
           new_entry = agreement_rounded$cn_states[[i]][1,2:3]
           new_entry$star = 2
-          new_entry$level = "c"
+          new_entry$level = "d"
           
         } else if (agreement_rounded_alt$agree[i]) {
           # else if rounded clonal agree, choose that and assign 2*
           new_entry = agreement_rounded_alt$cn_states[[i]][1,2:3]
           new_entry$star = 2
-          new_entry$level = "c"
+          new_entry$level = "d"
             
         } else if (agreement_rounded_majority_vote$agree[i]) {
           # majority vote by > 50% of the methods 
           new_entry = agreement_rounded_majority_vote$cn_states[[i]][1,1:2]
           new_entry$star = 2
-          new_entry$level = "d"
+          new_entry$level = "e"
           row.names(new_entry) = NULL
           
         } else {
           # else no solution for now, below will select the best method for this sample
           new_entry = data.frame(major_cn=NA, minor_cn=NA)
           new_entry$star = 1
-          new_entry$level = "e"
+          new_entry$level = "f"
         }
         
         
@@ -440,7 +544,15 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Building initial consensus profile...")
-  consensus_profile = create_consensus_profile(segments, agreement_clonal, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, all_data_clonal$map_broad_baflogr, all_data_clonal$map_vanloowedge_baflogr)
+  consensus_profile = create_consensus_profile(segments, 
+                                               agreement_clonal, 
+                                               agreement_clonal_exclude_1, 
+                                               agreement_clonal_overrule, 
+                                               agreement_rounded, 
+                                               agreement_rounded_alt, 
+                                               agreement_rounded_majority_vote, 
+                                               all_data_clonal$map_broad_baflogr, 
+                                               all_data_clonal$map_vanloowedge_baflogr)
   
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
@@ -550,14 +662,6 @@ if (file.exists(breakpoints_file)) {
   
   save.image(file.path(outdir, "saves", paste0(samplename, "_agreement_save.RData")))
   
-  get_ploidy = function(segments, map, broad=F) {
-    if (!is.na(map)) {
-      cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
-      return(list(ploidy=round(calc_ploidy(cn_bb), 4), status=get_ploidy_status(cn_bb)))
-    } else {
-      return(list(ploidy=NA, status=NA))
-    }
-  }
   print("Building summary stats file...")
   res = parse_all_purities(samplename, method_purityfile)
   purity_dkfz = res$dkfz
