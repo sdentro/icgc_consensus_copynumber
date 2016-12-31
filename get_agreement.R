@@ -286,7 +286,7 @@ sex = args[3]
 # outdir = "output"
 
 
-# samplename = "007aab66-2f07-459d-8952-3041d6ea24a8"
+# samplename = "005794f1-5a87-45b5-9811-83ddf6924568"
 # sex = "female"
 
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
@@ -476,6 +476,12 @@ if (file.exists(breakpoints_file)) {
       # Separate approaches for X, Y and autosomes
       if (segments$chromosome[i]=="X") {
         print("Found X")
+        
+        # if female: use dkfz, mustonen, vanloowedge (and broad when available)
+        
+        # if male: use dkfz, mustonen (and broad when available)
+        
+        
         new_entry = data.frame(major_cn=NA, minor_cn=NA, star=NA, level=NA, broad_baf=NA, broad_logr=NA, vanloowedge_baf=NA, vanloowedge_logr=NA)
         consensus_profile = rbind(consensus_profile, new_entry)
         
@@ -616,7 +622,8 @@ if (file.exists(breakpoints_file)) {
   update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded) {
   
     closest_method = names(rounded_ranking)[1]
-    closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_rounded)))
+    # Take the min as broad and vanloowedge have multiple matches due to the baf and logr
+    closest_method_index = min(which(grepl(paste0("map_", closest_method), names(all_data_rounded))))
     closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
