@@ -622,8 +622,8 @@ if (file.exists(breakpoints_file)) {
   update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded) {
   
     closest_method = names(rounded_ranking)[1]
-    # Take the min as broad and vanloowedge have multiple matches due to the baf and logr
-    closest_method_index = min(which(grepl(paste0("map_", closest_method), names(all_data_rounded))))
+    # Take the best method and exclude baflogr entries here
+    closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_rounded))  & !grepl("baflogr", names(all_data_rounded)))
     closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
@@ -635,7 +635,7 @@ if (file.exists(breakpoints_file)) {
         } else {
           
         # The most often agreeing method does not make a call, iterate over the others until we find one
-          for (j in which(grepl("map_", names(all_data_rounded)))) {
+          for (j in which(grepl("map_", names(all_data_rounded)) & !grepl("baflogr", names(all_data_rounded)))) {
             if (!is.na(all_data_rounded[[j]])) {
               other_closest_method = all_data_rounded[[j]]$cn_states
               if (!is.null(other_closest_method[[i]])) {
