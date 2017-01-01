@@ -521,7 +521,8 @@ if (file.exists(breakpoints_file)) {
   create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_exclude_1, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
-    for (i in 1:length(r)) {
+    # for (i in 1:length(r)) {
+    for (i in 1:nrow(segments))
       if (agreement_clonal$agree[i]) {
         # if clonal agree, choose that and assign 3*
         new_entry = agreement_clonal$cn_states[[i]][1,2:3]
