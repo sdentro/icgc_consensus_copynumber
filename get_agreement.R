@@ -522,7 +522,7 @@ if (file.exists(breakpoints_file)) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     # for (i in 1:length(r)) {
-    for (i in 1:nrow(segments))
+    for (i in 1:nrow(segments)) {
       if (agreement_clonal$agree[i]) {
         # if clonal agree, choose that and assign 3*
         new_entry = agreement_clonal$cn_states[[i]][1,2:3]
