@@ -157,26 +157,17 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     rounded_clonal[[i]] = unique(rounded_clonal[[i]])
   }
   
-  print("Removing NAs")
-  for (i in 1:length(rounded_clonal)) {
-    print(paste0("Removing: ", sum(is.na(rounded_clonal[[i]]$major_cn) | is.na(rounded_clonal[[i]]$minor_cn))))
-    rounded_clonal[[i]] = rounded_clonal[[i]][is.na(rounded_clonal[[i]]$major_cn) | is.na(rounded_clonal[[i]]$minor_cn),]
-  }
-  
   print("Writing data to file")
   # write out the complete profiles
   for (i in 1:length(rounded_clonal)) {
     cn_method = names(rounded_clonal)[i]
-    if (all(rounded_clonal[[i]]$copy_number==-2)) {
-      next
-    } else {
+
       if (rounding_up) {
         dir_postfix = paste0(cn_method, "_rounded_clonal")
       } else {
         dir_postfix = paste0(cn_method, "_rounded_alt_clonal")
       }
       write.table(rounded_clonal[[i]], file=file.path(outdir, dir_postfix, paste0(samplename, "_segments.txt")), quote=F, sep="\t", row.names=F)
-    }
   }
   
   #####################################################################
