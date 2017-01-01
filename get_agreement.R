@@ -223,7 +223,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
     print("allstates")
     print(all_states)
     # Check that we've got enough methods with a solution - we'll check for enough methods agreeing below
-    if (length(methods_with_clonal_solution) >= min_methods_with_call_on_segment & nrow(all_states) > 0) {
+    if (length(methods_with_clonal_solution) >= min_methods_with_call_on_segment) {
       clonal_solutions = all_states[row.names(all_states) %in% methods_with_clonal_solution, ]
       
       # Choose, if a consensus is reached
