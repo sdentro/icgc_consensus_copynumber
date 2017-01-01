@@ -296,7 +296,7 @@ parse_all_purities = function(samplename, method_purityfile) {
   return(list(broad=purity_broad, dkfz=purity_dkfz, mustonen=purity_mustonen, peifer=purity_peifer, vanloowedge=purity_vanloowedge))
 }
 
-parse_dummy_cn_profile = function(nmaj=-1, nmin=-1) {
+parse_dummy_cn_profile = function(nmaj=NA, nmin=NA) {
   temp = read.table("segmentation_chrom_arms_full.txt", header=T, stringsAsFactors=F)
   temp$nMaj1_A = nmaj
   temp$nMin1_A = nmin
@@ -304,7 +304,7 @@ parse_dummy_cn_profile = function(nmaj=-1, nmin=-1) {
 }
 
 get_dummy_cn_entry = function(segment) {
-  return(data.frame(chromosome=segment$chromosome, start=segment$start, end=segment$end, copy_number=-2, major_cn=-1, minor_cn=-1, ccf=NA))
+  return(data.frame(chromosome=segment$chromosome, start=segment$start, end=segment$end, copy_number=NA, major_cn=NA, minor_cn=NA, ccf=NA))
 }
 
 #' DKFZ does not make separate calls, a deviation from integer should be used to detect subclonality
