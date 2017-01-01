@@ -27,6 +27,13 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     purity = parse_dkfz_purity(purityfile, samplename)
     dat$ccf = dat$cellular_prevalence / purity
     
+    # Check for X and Y in males as they don't have allele specific CN in the given files
+    sel = !is.na(dat$copy_number) & is.na(dat$major_cn) & is.na(dat$minor_cn)
+    if (any(sel)) {
+      dat$major_cn[sel] = dat$copy_number[sel]
+      dat$minor_cn[sel] = 0
+    }
+    
     # If the CN does not deviate from an integer by a supplied cutoff the segment should be considered clonal. Here we round those values that are supposedly clonal
     cn_deviation = abs(dat$copy_number-round(dat$copy_number))
     cn_deviation = ifelse(is.na(cn_deviation), 0, cn_deviation)
@@ -50,13 +57,6 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     
     if (24 %in% dat$chromosome) {
       dat$chromosome[dat$chromosome==24] = "Y"
-    }
-    
-    # Check for X and Y in males as they don't have allele specific CN in the given files
-    sel = !is.na(dat$copy_number) & is.na(dat$major_cn) & is.na(dat$minor_cn)
-    if (any(sel)) {
-      dat$major_cn[sel] = dat$copy_number[sel]
-      dat$major_cn[sel] = 0
     }
     
     return(dat)
@@ -217,7 +217,7 @@ parse_broad_purity = function(purityfile, samplename) {
   return(purity)
 }
 
-parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex, mustonen_has_header=F, round_dkfz=T, num_threads=1) {
+parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex, mustonen_has_header=F, cn_round_dkfz=T, num_threads=1) {
 
   do_mapping = function(index, all_dat, method_names, segments) {
     dat = all_dat[[index]]
@@ -230,7 +230,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
     return(list(dat=dat, map=dat_map))
   }
   
-  dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=round_dkfz)
+  dat_dkfz = parse_dkfz(method_segmentsfile[["dkfz"]], method_purityfile[["dkfz"]], samplename, perform_rounding=cn_round_dkfz)
   dat_vanloowedge = parse_vanloowedge(method_segmentsfile[["vanloowedge"]], method_purityfile[["vanloowedge"]], samplename, sex)
   dat_peifer = parse_peifer(method_segmentsfile[["peifer"]], method_purityfile[["peifer"]], samplename)
   dat_mustonen = parse_mustonen(method_segmentsfile[["mustonen"]], method_purityfile[["mustonen"]], samplename, has_header=mustonen_has_header)
