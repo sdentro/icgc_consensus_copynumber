@@ -598,11 +598,14 @@ if (file.exists(breakpoints_file)) {
                                                all_data_clonal$map_broad_baflogr, 
                                                all_data_clonal$map_vanloowedge_baflogr)
   
+  print("Making figure input")
   profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
+  print("Making figure")
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
   png(file.path(outdir, "figures", paste0(samplename, "_consensus_rounded.png")), height=300, width=1300)
   print(p)
   dev.off()
+  print("Made figure")
   
   #####################################################################
   # Calc agreement with both the created consensus per method
