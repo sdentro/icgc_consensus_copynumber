@@ -157,6 +157,12 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     rounded_clonal[[i]] = unique(rounded_clonal[[i]])
   }
   
+  print("Removing NAs")
+  for (i in 1:length(rounded_clonal)) {
+    print(paste0("Removing: ", sum(is.na(rounded_clonal[[i]]$major_cn) | is.na(rounded_clonal[[i]]$minor_cn))))
+    rounded_clonal[[i]] = rounded_clonal[[i]][is.na(rounded_clonal[[i]]$major_cn) | is.na(rounded_clonal[[i]]$minor_cn),]
+  }
+  
   print("Writing data to file")
   # write out the complete profiles
   for (i in 1:length(rounded_clonal)) {
