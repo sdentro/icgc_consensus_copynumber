@@ -687,13 +687,15 @@ if (file.exists(breakpoints_file)) {
   
   # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
   if (nrow(consensus_profile) < nrow(segments)) {
+    print(paste0("Diff before: ", nrow(consensus_profile), " ", nrow(segments)))
     template_entry = consensus_profile[1,,drop=F]
     template_entry[1, 1:ncol(template_entry)] = NA
     for (i in nrow(consensus_profile):nrow(segments)) {
+      print("Adding template entry")
       consensus_profile = rbind(consensus_profile, template_entry)
     }
   }
-  
+  print(paste0("Diff after: ", nrow(consensus_profile), " ", nrow(segments)))
   
   consensus_profile = data.frame(segments, consensus_profile)
   
