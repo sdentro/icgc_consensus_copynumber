@@ -684,6 +684,17 @@ if (file.exists(breakpoints_file)) {
   }
   print("Filling in remaining segments with best method...")
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
+  
+  # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
+  if (nrow(consensus_profile) < nrow(segments)) {
+    template_entry = consensus_profile[1,,drop=F]
+    template_entry[1, 1:ncol(template_entry)] = NA
+    for (i in nrow(consensus_profile):nrow(segments)) {
+      consensus_profile = rbind(consensus_profile, template_entry)
+    }
+  }
+  
+  
   consensus_profile = data.frame(segments, consensus_profile)
   
   is_major_negative = consensus_profile$major_cn < 0
