@@ -220,8 +220,10 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
     methods_with_clonal_solution = colnames(combined_status)[!is.na(combined_status[i,]) & combined_status[i,]=="clonal"]
     print("Clonal solution:")
     print(methods_with_clonal_solution)
+    print("allstates")
+    print(all_states)
     # Check that we've got enough methods with a solution - we'll check for enough methods agreeing below
-    if (length(methods_with_clonal_solution) >= min_methods_with_call_on_segment) {
+    if (length(methods_with_clonal_solution) >= min_methods_with_call_on_segment & nrow(all_states) > 0) {
       clonal_solutions = all_states[row.names(all_states) %in% methods_with_clonal_solution, ]
       
       # Choose, if a consensus is reached
@@ -245,7 +247,8 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
         cn_states[[i]] = new_state
         
       } else {
-        # Do nothing ? no majority vote, there cannot be multiple
+        # No suitable solutions, therefore add a template
+        print("No solution")
       }
     }
   }
