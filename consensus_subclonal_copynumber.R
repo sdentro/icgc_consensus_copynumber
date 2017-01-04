@@ -1,4 +1,4 @@
-source("~/repo/icgc_consensus_copynumber/util.R")
+source("~/repo/icgc_consensus_copynumber_final/util.R")
 
 
 #####################################################################
@@ -275,7 +275,7 @@ q(save="no")
 
 
 
-
+# 02917220-6a7a-46a1-8656-907e96bef88e output/ TRUE FALSE male
 
 
 
