@@ -548,6 +548,16 @@ collapse2bb = function(segments, cn_states, broad=F) {
     new_bb_seg$endpos[1] = segments$end[i]
     
     cn_states_i = cn_states[[i]][[1]]
+    
+    # Take the largest segment if there are multiple clonal segments from the broad data
+    if (broad && !is.null(cn_states_i) && !is.na(cn_states_i) && nrow(cn_states_i)>0) {
+      are_clonal = which(cn_states_i$ccf==1)
+      if (length(are_clonal) > 1) {
+        largest = are_clonal[which.max(cn_states_i$end[are_clonal] - cn_states_i$start[are_clonal])]
+        cn_states_i = cn_states_i[c(largest, which(cn_states_i$ccf!=1)),]
+      }
+    }
+    
     if (is.null(cn_states_i) || is.na(cn_states_i) || nrow(cn_states_i)==0) {
       # Do not add a segment for where there is no call
       next
