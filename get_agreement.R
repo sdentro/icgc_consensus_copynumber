@@ -735,22 +735,21 @@ if (file.exists(breakpoints_file)) {
     closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
-        
         # Take the fit of the method that is most often agreeing with the consensus
-        if (!is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
+        if (!is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]]) && nrow(closest_method_profile[[i]][[1]])>0 && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
           consensus_profile$major_cn[i] = closest_method_profile[[i]][[1]]$major_cn[1]
           consensus_profile$minor_cn[i] = closest_method_profile[[i]][[1]]$minor_cn[1]
         } else {
-          
-        # The most often agreeing method does not make a call, iterate over the others until we find one
-          for (j in which(grepl("map_", names(all_data_rounded)) & !grepl("baflogr", names(all_data_rounded)))) {
+          # The most often agreeing method does not make a call, iterate over the others until we find one
+          for (j in which(grepl("map_", names(all_data_rounded)))) {
             if (!is.na(all_data_rounded[[j]])) {
               other_closest_method = all_data_rounded[[j]]$cn_states
-              if (!is.null(other_closest_method[[i]])) {
+              if (!is.null(other_closest_method[[i]]) && !is.na(other_closest_method[[i]]) && nrow(other_closest_method[[i]][[1]])>0 && !is.na(other_closest_method[[i]][[1]]$minor_cn) && !is.na(other_closest_method[[i]][[1]]$major_cn)) {
                 consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
                 consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
                 consensus_profile$star[i] = 1
                 consensus_profile$level[i] = "f"
+                break # stop the loop as we've found a match
               }
             }
           }
