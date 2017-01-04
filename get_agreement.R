@@ -126,42 +126,44 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
       inventory = na.omit(inventory)
       agree[i] = all(inventory$major_cn==inventory$major_cn[1]) & all(inventory$minor_cn==inventory$minor_cn[1]) & nrow(inventory)>0 & inventory$major_cn[1] > -1 & inventory$minor_cn[1] > -2
       num_methods[i] = nrow(inventory)
-    } 
+    } else {
+      cn_states[[i]] = NA
+    }
   }
   
   segments$size = segments$end - segments$start
   frac_genome_agree = round(sum(segments$size[agree]/1000) / sum(segments$size/1000), 2)
   
-  return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, cn_states=cn_states, num_methods=num_methods))
+  return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, cn_states=cn_states, num_methods_agree=num_methods))
 }
 
 
 get_all_cn_fits = function(all_data, segment_index, allowed_methods) {
-  if (!is.na(all_data$map_vanloowedge) && !is.na(all_data$map_vanloowedge$cn_states) && "vanloowedge" %in% allowed_methods) {
+  if (!is.na(all_data$map_vanloowedge) && !is.na(all_data$map_vanloowedge$cn_states)  && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]]) & "vanloowedge" %in% allowed_methods & length(all_data$map_vanloowedge$cn_states) >= segment_index) {
     vanloowedge = all_data$map_vanloowedge$cn_states[[segment_index]]
   } else {
     vanloowedge = NULL
   }
   
-  if (!is.na(all_data$map_mustonen) && !is.na(all_data$map_mustonen$cn_states) && "mustonen" %in% allowed_methods) {
+  if (!is.na(all_data$map_mustonen) && !is.na(all_data$map_mustonen$cn_states)  && !is.na(all_data$map_mustonen$cn_states[[segment_index]]) && "mustonen" %in% allowed_methods & length(all_data$map_mustonen$cn_states) >= segment_index) {
     mustonen = all_data$map_mustonen$cn_states[[segment_index]]
   } else {
     mustonen = NULL
   }
   
-  if (!is.na(all_data$map_peifer) && !is.na(all_data$map_peifer$cn_states) && "peifer" %in% allowed_methods) {
+  if (!is.na(all_data$map_peifer) && !is.na(all_data$map_peifer$cn_states) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && "peifer" %in% allowed_methods & length(all_data$map_peifer$cn_states) >= segment_index) {
     peifer = all_data$map_peifer$cn_states[[segment_index]]
   } else {
     peifer = NULL
   }
   
-  if (!is.na(all_data$map_broad) && !is.na(all_data$map_broad$cn_states) && "broad" %in% allowed_methods) {
+  if (!is.na(all_data$map_broad) && !is.na(all_data$map_broad$cn_states) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && "broad" %in% allowed_methods & length(all_data$map_broad$cn_states) >= segment_index) {
     broad = all_data$map_broad$cn_states[[segment_index]]
   } else {
     broad = NULL
   }
   
-  if (!is.na(all_data$map_dkfz) && !is.na(all_data$map_dkfz$cn_states) && "dkfz" %in% allowed_methods) {
+  if (!is.na(all_data$map_dkfz) && !is.na(all_data$map_dkfz$cn_states) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && "dkfz" %in% allowed_methods & length(all_data$map_dkfz$cn_states) >= segment_index) {
     dkfz = all_data$map_dkfz$cn_states[[segment_index]]
   } else {
     dkfz = NULL
@@ -196,6 +198,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
 
   
   agree = rep(F, nrow(segments))
+  num_methods = rep(0, nrow(segments))
   cn_states = list()
   for (i in 1:nrow(segments)) {
     
@@ -218,10 +221,6 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
     
     # Work out what is the majority vote and by how many samples - for only the clonal fits
     methods_with_clonal_solution = colnames(combined_status)[!is.na(combined_status[i,]) & combined_status[i,]=="clonal"]
-    print("Clonal solution:")
-    print(methods_with_clonal_solution)
-    print("allstates")
-    print(all_states)
     # Check that we've got enough methods with a solution - we'll check for enough methods agreeing below
     if (length(methods_with_clonal_solution) >= min_methods_with_call_on_segment) {
       clonal_solutions = all_states[row.names(all_states) %in% methods_with_clonal_solution, ]
@@ -244,11 +243,11 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
         new_state$num_methods_agree = combined_states[[majority_vote]]
         
         agree[i] = T
+        num_methods[i] = combined_states[[majority_vote]]
         cn_states[[i]] = new_state
         
       } else {
-        # No suitable solutions, therefore add a template
-        print("No solution")
+        # No suitable calls to create a majority vote
       }
     }
   }
@@ -256,7 +255,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
     segments$size = segments$end - segments$start
   frac_genome_agree = round(sum(segments$size[agree]/1000) / sum(segments$size/1000), 2)
 
-  return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, cn_states=cn_states))
+  return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, num_methods_agree=num_methods, cn_states=cn_states))
 }
 
 test_purities = function(purities, consensus_profile) {
@@ -309,7 +308,7 @@ get_ploidy = function(segments, map, broad=F) {
 #####################################################################
 # Original agreement
 #####################################################################
-# setwd("~/Documents/Projects/icgc/consensus_subclonal_copynumber/")
+# setwd("~/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing/")
 
 library(readr)
 source("~/repo/icgc_consensus_copynumber/util.R")
@@ -327,8 +326,8 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "003819bc-c415-4e76-887c-931d60ed39e7"
-# sex = "female"
+# samplename = "0040b1b6-b07a-4b6e-90ef-133523eaf412"
+# sex = "male"
 # outdir = "output"
 
 
@@ -398,7 +397,15 @@ if (file.exists(breakpoints_file)) {
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
   
   print("Getting clonal agreement...")
-  agreement_clonal = get_frac_genome_agree(samplename, all_data_clonal, segments, min_methods_agree=5, min_methods_agree_x=2, min_methods_agree_y=2, allowed_methods_x_female=allowed_methods_x_female, allowed_methods_x_male=allowed_methods_x_male, allowed_methods_y=allowed_methods_y)
+  agreement_clonal = get_frac_genome_agree(samplename, 
+                                           all_data_clonal, 
+                                           segments, 
+                                           min_methods_agree=5, 
+                                           min_methods_agree_x=2, 
+                                           min_methods_agree_y=2, 
+                                           allowed_methods_x_female=allowed_methods_x_female, 
+                                           allowed_methods_x_male=allowed_methods_x_male, 
+                                           allowed_methods_y=allowed_methods_y)
   
   #####################################################################
   # Agreement exclude 1
@@ -464,6 +471,7 @@ if (file.exists(breakpoints_file)) {
                                                       method_overruled=method_overruled, 
                                                       min_methods_with_call_on_segment=3, 
                                                       min_methods_agree=sum(!is.na(method_overruled)),
+                                                      min_methods_agree=4,
                                                       min_methods_agree_x=2, # Keep X and Y steady
                                                       min_methods_agree_y=2,
                                                       allowed_methods_x_female=allowed_methods_x_female, 
@@ -491,7 +499,7 @@ if (file.exists(breakpoints_file)) {
                              broad=ifelse(!overrulings$broad, broad_segmentsfile, NA))
   
   all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
-  agreement_rounded = get_frac_genome_agree(samplename, all_data_rounded, segments, method_overruled=method_overruled, min_methods_agree_x=2, min_methods_agree_y=2, allowed_methods_x_female=allowed_methods_x_female, allowed_methods_x_male=allowed_methods_x_male, allowed_methods_y=allowed_methods_y)
+
   
   #####################################################################
   # Agreement after alternate rounding
@@ -511,18 +519,63 @@ if (file.exists(breakpoints_file)) {
                              broad=ifelse(!overrulings$broad, broad_segmentsfile, NA))
   
   all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
-  agreement_rounded_alt = get_frac_genome_agree(samplename, all_data_rounded_alt, segments, method_overruled=method_overruled, min_methods_agree_x=2, min_methods_agree_y=2, allowed_methods_x_female=allowed_methods_x_female, allowed_methods_x_male=allowed_methods_x_male, allowed_methods_y=allowed_methods_y)
+  
+  # TODO:
+  # Write a function that takes all_data_rounded, all_data_rounded_alt and all_data_clonal and works out per segment:
+  #  * if all segments clonal -> store those
+  #  * if some segments subclonal -> find majority state and compare with clonal segments
+  #  * if no majority state -> check with clonal segments
+  #  * if not able to decide, take subclonal state with highest fraction
+  
+  
+  agreement_rounded = get_frac_genome_agree(samplename, 
+                                            all_data_rounded, 
+                                            segments, 
+                                            method_overruled=method_overruled, 
+                                            min_methods_agree=4, 
+                                            min_methods_agree_x=2, 
+                                            min_methods_agree_y=2, 
+                                            allowed_methods_x_female=allowed_methods_x_female, 
+                                            allowed_methods_x_male=allowed_methods_x_male, 
+                                            allowed_methods_y=allowed_methods_y)
+  agreement_rounded_alt = get_frac_genome_agree(samplename, 
+                                                all_data_rounded, 
+                                                segments, 
+                                                method_overruled=method_overruled, 
+                                                min_methods_agree=4, 
+                                                min_methods_agree_x=2, 
+                                                min_methods_agree_y=2, 
+                                                allowed_methods_x_female=allowed_methods_x_female, 
+                                                allowed_methods_x_male=allowed_methods_x_male, 
+                                                allowed_methods_y=allowed_methods_y)
   
   #####################################################################
   # Agreement with accepting majority vote
   #####################################################################
   print("Getting majority vote agreement...")
-  agreement_rounded_majority_vote = get_frac_genome_agree_maj_vote(samplename, all_data_rounded, segments, method_overruled=method_overruled, allowed_methods_x_female=allowed_methods_x_female, allowed_methods_x_male=allowed_methods_x_male, allowed_methods_y=allowed_methods_y)
+  agreement_rounded_majority_vote = get_frac_genome_agree_maj_vote(samplename, 
+                                                                   all_data_rounded, 
+                                                                   segments, 
+                                                                   method_overruled=method_overruled, 
+                                                                   min_methods_agree_x=2, 
+                                                                   min_methods_agree_y=2, 
+                                                                   allowed_methods_x_female=allowed_methods_x_female, 
+                                                                   allowed_methods_x_male=allowed_methods_x_male, 
+                                                                   allowed_methods_y=allowed_methods_y)
+  agreement_rounded_alt_majority_vote = get_frac_genome_agree_maj_vote(samplename, 
+                                                                       all_data_rounded_alt, 
+                                                                       segments, 
+                                                                       method_overruled=method_overruled,
+                                                                       min_methods_agree_x=2, 
+                                                                       min_methods_agree_y=2, 
+                                                                       allowed_methods_x_female=allowed_methods_x_female, 
+                                                                       allowed_methods_x_male=allowed_methods_x_male, 
+                                                                       allowed_methods_y=allowed_methods_y)
   
   #####################################################################
   # Piece together a complete agreement profile
   #####################################################################
-  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_exclude_1, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
+  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_exclude_1, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, agreement_rounded_alt_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     # for (i in 1:length(r)) {
@@ -532,30 +585,35 @@ if (file.exists(breakpoints_file)) {
         new_entry = agreement_clonal$cn_states[[i]][1,2:3]
         new_entry$star = 3
         new_entry$level = "a"
+        new_entry$methods_agree = agreement_clonal$num_methods_agree[i]
         
       } else if (agreement_clonal_exclude_1$agree[i]) {
         # if clonal agree except 1, choose that and assign 3*
         new_entry = agreement_clonal_exclude_1$cn_states[[i]][1,2:3]
         new_entry$star = 3
-        new_entry$level = "b"       
+        new_entry$level = "b" 
+        new_entry$methods_agree = agreement_clonal_exclude_1$num_methods_agree[i]
         
       } else if (agreement_clonal_overrule$agree[i]) {
         # pivot table
         new_entry = agreement_clonal_overrule$cn_states[[i]][1,2:3]
         new_entry$star = 3
         new_entry$level = "c"
+        new_entry$methods_agree = agreement_clonal_overrule$num_methods_agree[i]
         
       } else if (agreement_rounded$agree[i]) {
         # else if rounded clonal agree, choose that and assign 2*
         new_entry = agreement_rounded$cn_states[[i]][1,2:3]
         new_entry$star = 2
         new_entry$level = "d"
+        new_entry$methods_agree = agreement_rounded$num_methods_agree[i]
         
       } else if (agreement_rounded_alt$agree[i]) {
         # else if rounded clonal agree, choose that and assign 2*
         new_entry = agreement_rounded_alt$cn_states[[i]][1,2:3]
         new_entry$star = 2
         new_entry$level = "d"
+        new_entry$methods_agree = agreement_rounded_alt$num_methods_agree[i]
         
       } else if (agreement_rounded_majority_vote$agree[i]) {
         # majority vote by > 50% of the methods 
@@ -563,12 +621,22 @@ if (file.exists(breakpoints_file)) {
         new_entry$star = 2
         new_entry$level = "e"
         row.names(new_entry) = NULL
+        new_entry$methods_agree = agreement_rounded_majority_vote$num_methods_agree[i]
+        
+      } else if (agreement_rounded_alt_majority_vote$agree[i]) {
+        # majority vote by > 50% of the methods 
+        new_entry = agreement_rounded_alt_majority_vote$cn_states[[i]][1,1:2]
+        new_entry$star = 2
+        new_entry$level = "e"
+        row.names(new_entry) = NULL
+        new_entry$methods_agree = agreement_rounded_alt_majority_vote$num_methods_agree[i]
         
       } else {
         # else no solution for now, below will select the best method for this sample
         new_entry = data.frame(major_cn=NA, minor_cn=NA)
         new_entry$star = 1
         new_entry$level = "f"
+        new_entry$methods_agree = NA
       }
       
       
@@ -600,6 +668,7 @@ if (file.exists(breakpoints_file)) {
                                                agreement_rounded, 
                                                agreement_rounded_alt, 
                                                agreement_rounded_majority_vote, 
+                                               agreement_rounded_alt_majority_vote,
                                                all_data_clonal$map_broad_baflogr, 
                                                all_data_clonal$map_vanloowedge_baflogr)
   
@@ -668,7 +737,7 @@ if (file.exists(breakpoints_file)) {
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
         
         # Take the fit of the method that is most often agreeing with the consensus
-        if (!is.null(closest_method_profile[[i]])) {
+        if (!is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
           consensus_profile$major_cn[i] = closest_method_profile[[i]][[1]]$major_cn[1]
           consensus_profile$minor_cn[i] = closest_method_profile[[i]][[1]]$minor_cn[1]
         } else {
