@@ -139,31 +139,31 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
 
 
 get_all_cn_fits = function(all_data, segment_index, allowed_methods) {
-  if (!is.na(all_data$map_vanloowedge) && !is.na(all_data$map_vanloowedge$cn_states)  && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]]) & "vanloowedge" %in% allowed_methods & length(all_data$map_vanloowedge$cn_states) >= segment_index) {
+  if (!is.na(all_data$map_vanloowedge) && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]])  && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]]) & "vanloowedge" %in% allowed_methods & length(all_data$map_vanloowedge$cn_states) >= segment_index) {
     vanloowedge = all_data$map_vanloowedge$cn_states[[segment_index]]
   } else {
     vanloowedge = NULL
   }
   
-  if (!is.na(all_data$map_mustonen) && !is.na(all_data$map_mustonen$cn_states)  && !is.na(all_data$map_mustonen$cn_states[[segment_index]]) && "mustonen" %in% allowed_methods & length(all_data$map_mustonen$cn_states) >= segment_index) {
+  if (!is.na(all_data$map_mustonen) && !is.na(all_data$map_mustonen$cn_states[[segment_index]])  && !is.na(all_data$map_mustonen$cn_states[[segment_index]]) && "mustonen" %in% allowed_methods & length(all_data$map_mustonen$cn_states) >= segment_index) {
     mustonen = all_data$map_mustonen$cn_states[[segment_index]]
   } else {
     mustonen = NULL
   }
   
-  if (!is.na(all_data$map_peifer) && !is.na(all_data$map_peifer$cn_states) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && "peifer" %in% allowed_methods & length(all_data$map_peifer$cn_states) >= segment_index) {
+  if (!is.na(all_data$map_peifer) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && "peifer" %in% allowed_methods & length(all_data$map_peifer$cn_states) >= segment_index) {
     peifer = all_data$map_peifer$cn_states[[segment_index]]
   } else {
     peifer = NULL
   }
   
-  if (!is.na(all_data$map_broad) && !is.na(all_data$map_broad$cn_states) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && "broad" %in% allowed_methods & length(all_data$map_broad$cn_states) >= segment_index) {
+  if (!is.na(all_data$map_broad) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && "broad" %in% allowed_methods & length(all_data$map_broad$cn_states) >= segment_index) {
     broad = all_data$map_broad$cn_states[[segment_index]]
   } else {
     broad = NULL
   }
   
-  if (!is.na(all_data$map_dkfz) && !is.na(all_data$map_dkfz$cn_states) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && "dkfz" %in% allowed_methods & length(all_data$map_dkfz$cn_states) >= segment_index) {
+  if (!is.na(all_data$map_dkfz) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && "dkfz" %in% allowed_methods & length(all_data$map_dkfz$cn_states) >= segment_index) {
     dkfz = all_data$map_dkfz$cn_states[[segment_index]]
   } else {
     dkfz = NULL
