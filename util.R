@@ -28,8 +28,9 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     dat$ccf = dat$cellular_prevalence / purity
     
     # Check for X and Y in males as they don't have allele specific CN in the given files
-    sel = !is.na(dat$copy_number) & is.na(dat$major_cn) & is.na(dat$minor_cn)
+    sel = any(dat$copy_number==24) & (dat$copy_number==23 | dat$copy_number==24) & !is.na(dat$copy_number) & is.na(dat$major_cn) & is.na(dat$minor_cn)
     if (any(sel)) {
+      # Set as major allele as we don't expect a minor allele in males
       dat$major_cn[sel] = dat$copy_number[sel]
       dat$minor_cn[sel] = 0
     }
@@ -394,7 +395,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
     
     # No overlap, no call
     if (length(overlap)==0) {
-      return(list(cn_states=NULL, status=NULL))
+      return(list(cn_states=NA, status=NA))
       
       # One segment overlaps, but could be subclonal in DKFZ output
     } else if (length(overlap)==1) {
@@ -434,7 +435,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         
         if (length(overlap)==0) {
           print(paste0("mapdata broad - found multiple clonal segments that overlap, but also with other segments ", i))
-          return(list(cn_states=NULL, status=NULL))
+          return(list(cn_states=NA, status=NA))
         }
         
         # temp_segs = merge_broad_segments(cn_segments, overlap, bp_segments[i,,drop=F])
@@ -442,7 +443,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         if (nrow(temp_segs) == 1) {
           status = "clonal"
           cn_states = list(temp_segs)
-          return(list(cn_states=NULL, status=NULL)) # skip the rest of the loop as it attempts to store the unmerged segments
+          return(list(cn_states=NA, status=NA)) # skip the rest of the loop as it attempts to store the unmerged segments
         } else if (sum(temp_segs$historically_clonal==1)==1 & sum(temp_segs$historically_clonal==0)>=1) {
           # Subclonality is encoded as one historical and at least one not state
           status = "subclonal"
@@ -451,7 +452,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
           print(bp_segments[i,])
           print(temp_segs)
           print(paste0("mapdata broad - found multiple clonal segments that cannot be merged for single consensus segment ", i))
-          return(list(cn_states=NULL, status=NULL))
+          return(list(cn_states=NA, status=NA))
         }
         
         
@@ -464,7 +465,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         # Check for zero sized segments
         if (sum(segment_overlaps_bp > 0)==0) {
           # No more candidates left, so no overlap
-          return(list(cn_states=NULL, status=NULL))
+          return(list(cn_states=NA, status=NA))
         }
         
         # Remove segments that are 1bp long
@@ -473,7 +474,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         
         # There are no segments that overlap considerably with the given segment, no call
         if (length(overlap)==0) {
-          return(list(cn_states=NULL, status=NULL))
+          return(list(cn_states=NA, status=NA))
           
           # One segment overlaps considerably, therefore clonal
         } else if (length(overlap)==1) {
