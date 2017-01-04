@@ -548,7 +548,7 @@ collapse2bb = function(segments, cn_states, broad=F) {
     new_bb_seg$endpos[1] = segments$end[i]
     
     cn_states_i = cn_states[[i]][[1]]
-    if (is.null(cn_states_i)) {
+    if (is.null(cn_states_i) || is.na(cn_states_i) || nrow(cn_states_i)==0) {
       # Do not add a segment for where there is no call
       next
     } else if (nrow(cn_states_i)==0) {
