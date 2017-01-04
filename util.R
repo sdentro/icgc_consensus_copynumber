@@ -668,7 +668,7 @@ parse_bb_template = function() {
 # Round subclonal CNAs
 #####################################################################
 round_vanloo_wedge = function(map, i, purity, rounding_up=T) {
-  if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
+  if (!is.null(map$cn_states[[i]]) && !is.na(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
     if (rounding_up) {
       index_major_clone = which.max(dat$ccf)
@@ -679,7 +679,7 @@ round_vanloo_wedge = function(map, i, purity, rounding_up=T) {
     dat$cellular_prevalence = purity
     dat$ccf = 1
     return(dat)
-  } else if (is.null(map$cn_states[[i]])) {
+  } else if (is.null(map$cn_states[[i]]) || is.na(map$cn_states[[i]])) {
     return(data.frame())
   } else {
     return(map$cn_states[[i]][[1]])
@@ -687,7 +687,7 @@ round_vanloo_wedge = function(map, i, purity, rounding_up=T) {
 }
 
 round_peifer = function(map, i, purity, rounding_up=T) {
-  if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
+  if (!is.null(map$cn_states[[i]]) && !is.na(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
     if (rounding_up) {
       index_major_clone = which.max(dat$ccf)
@@ -698,7 +698,7 @@ round_peifer = function(map, i, purity, rounding_up=T) {
     dat$cellular_prevalence = purity
     dat$ccf = 1
     return(dat)
-  } else if (is.null(map$cn_states[[i]])) {
+  } else if (is.null(map$cn_states[[i]]) || is.na(map$cn_states[[i]])) {
     return(data.frame())
   } else {
     return(map$cn_states[[i]][[1]])
@@ -706,11 +706,15 @@ round_peifer = function(map, i, purity, rounding_up=T) {
 }
 
 round_mustonen = function(map, i) {
-  return(map$cn_states[[i]][[1]][1,,drop=F])
+  if (!is.na(map$cn_states[[i]][[1]])) {
+    return(map$cn_states[[i]][[1]][1,,drop=F])
+  } else {
+    return(data.frame())
+  }
 }
 
 round_dkfz = function(map, i, purity, rounding_up=T) {
-  if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) == 1) {
+  if (!is.null(map$cn_states[[i]]) && !is.na(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) == 1) {
     temp = map$cn_states[[i]][[1]]
     if (rounding_up) {
       temp$minor_cn = ceiling(temp$minor_cn)
@@ -723,7 +727,7 @@ round_dkfz = function(map, i, purity, rounding_up=T) {
     temp$cellular_prevalence = purity
     temp$ccf = 1
     return(temp)
-  } else if (is.null(map$cn_states[[i]])) {
+  } else if (is.null(map$cn_states[[i]]) || is.na(map$cn_states[[i]])) {
     return(data.frame())
   } else {
     return(data.frame())
@@ -732,7 +736,7 @@ round_dkfz = function(map, i, purity, rounding_up=T) {
 }
 
 round_broad = function(map, i, rounding_up=T) {
-  if (!is.null(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
+  if (!is.null(map$cn_states[[i]]) && !is.na(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) > 1) {
     dat = map$cn_states[[i]][[1]]
     if (rounding_up & sum(dat$historically_clonal==1)==1) {
       # Rounding up means taking the historically clonal state
@@ -746,7 +750,7 @@ round_broad = function(map, i, rounding_up=T) {
     }
     dat$ccf = 1
     return(dat)
-  } else if (is.null(map$cn_states[[i]])) {
+  } else if (is.null(map$cn_states[[i]]) || is.na(map$cn_states[[i]])) {
     return(data.frame())
   } else {
     return(map$cn_states[[i]][[1]])
