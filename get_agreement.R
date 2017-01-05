@@ -472,7 +472,6 @@ if (file.exists(breakpoints_file)) {
                                                       method_overruled=method_overruled, 
                                                       min_methods_with_call_on_segment=3, 
                                                       min_methods_agree=sum(!is.na(method_overruled)),
-                                                      min_methods_agree=4,
                                                       min_methods_agree_x=2, # Keep X and Y steady
                                                       min_methods_agree_y=2,
                                                       allowed_methods_x_female=allowed_methods_x_female, 
