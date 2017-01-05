@@ -641,7 +641,7 @@ if (file.exists(breakpoints_file)) {
       }
       
       
-      if (!is.null(map_broad_baflogr$cn_states[[i]]) && !is.na(map_broad_baflogr$cn_states[[i]])) {
+      if (!is.na(map_broad_baflogr) && !is.null(map_broad_baflogr$cn_states[[i]]) && !is.na(map_broad_baflogr$cn_states[[i]])) {
         new_entry$broad_baf = map_broad_baflogr$cn_states[[i]][[1]][1,4]
         new_entry$broad_logr = map_broad_baflogr$cn_states[[i]][[1]][1,5]
       } else {
@@ -649,7 +649,7 @@ if (file.exists(breakpoints_file)) {
         new_entry$broad_logr = NA
       }
       
-      if (!is.null(map_vanloowedge_baflogr$cn_states[[i]]) && !is.na(map_vanloowedge_baflogr$cn_states[[i]])) {
+      if (!is.na(map_vanloowedge_baflogr) && !is.null(map_vanloowedge_baflogr$cn_states[[i]]) && !is.na(map_vanloowedge_baflogr$cn_states[[i]])) {
         new_entry$vanloowedge_baf = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,4]
         new_entry$vanloowedge_logr = map_vanloowedge_baflogr$cn_states[[i]][[1]][1,5]
       } else {
