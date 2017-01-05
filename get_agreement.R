@@ -311,7 +311,7 @@ get_ploidy = function(segments, map, broad=F) {
 # setwd("~/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing/")
 
 library(readr)
-source("~/repo/icgc_consensus_copynumber/util.R")
+source("~/repo/icgc_consensus_copynumber_final/util.R")
 max.plot.cn=4
 num_threads=1
 
@@ -421,36 +421,36 @@ if (file.exists(breakpoints_file)) {
   expected_ploidy = expected_ploidy[expected_ploidy$samplename==samplename, "ploidy"]
   overrulings = list(broad=F, mustonen=F, dkfz=F, peifer=F, vanloowedge=F)
   # Compare to expected
-  if (length(expected_ploidy) > 0) {
-    if (abs(ploidy_vanloowedge$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+  if (length(expected_ploidy) > 0 && !is.na(expected_ploidy)) {
+    if (!is.na(ploidy_vanloowedge$ploidy) && abs(ploidy_vanloowedge$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
       print("Overruling Battenberg ploidy")
       all_data_clonal$map_vanloowedge = NA
       all_data_clonal$dat_vanloowedge = NA
       overrulings$vanloowedge = T
     }
     
-    if (abs(ploidy_broad$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+    if (!is.na(ploidy_broad$ploidy) && abs(ploidy_broad$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
       print("Overruling ABSOLUTE ploidy")
       all_data_clonal$map_broad = NA
       all_data_clonal$dat_broad = NA
       overrulings$broad = T
     }
     
-    if (abs(ploidy_dkfz$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+    if (!is.na(ploidy_dkfz$ploidy) && abs(ploidy_dkfz$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
       print("Overruling ACEseq ploidy")
       all_data_clonal$map_dkfz = NA
       all_data_clonal$dat_dkfz = NA
       overrulings$dkfz = T
     }
     
-    if (abs(ploidy_peifer$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+    if (!is.na(ploidy_peifer$ploidy) && abs(ploidy_peifer$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
       print("Overruling Sclust ploidy")
       all_data_clonal$map_peifer = NA
       all_data_clonal$dat_peifer = NA
       overrulings$peifer = T
     }
     
-    if (abs(ploidy_mustonen$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+    if (!is.na(ploidy_mustonen$ploidy) && abs(ploidy_mustonen$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
       print("Overruling CloneHD ploidy")
       all_data_clonal$map_mustonen = NA
       all_data_clonal$dat_mustonen = NA
