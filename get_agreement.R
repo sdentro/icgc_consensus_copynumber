@@ -335,7 +335,8 @@ sex = args[3]
 # sex = "female"
 
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
-expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz"
+# expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz" # Removed after ploidy has been reinferred after fixes
+expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
 # Max allowed deviation from the expected ploidy
 max_expected_ploidy_diff = 0.5
 allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge")
