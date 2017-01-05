@@ -21,7 +21,7 @@ breakpoints2segments = function(breakpoints) {
 }
 
 parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cutoff=0.1, perform_rounding=T) {
-  if (file.exists(segmentsfile)) {
+  if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     
     purity = parse_dkfz_purity(purityfile, samplename)
@@ -76,7 +76,7 @@ parse_dkfz_purity = function(purityfile, samplename) {
 }
 
 parse_vanloowedge = function(segmentsfile, purityfile, samplename, sex) {
-  if (file.exists(segmentsfile)) {
+  if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     purity = parse_vanloowedge_purity(purityfile, samplename)
     if ("clonal_frequency" %in% colnames(dat)) {
@@ -113,7 +113,7 @@ parse_vanloowedge_purity = function(purityfile, samplename) {
 }
 
 parse_peifer = function(segmentsfile, purityfile, samplename) {
-  if (file.exists(segmentsfile)) {
+  if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     # Remove negative size segments
     dat = dat[(dat$end-dat$start) > 0, ]
@@ -144,7 +144,7 @@ parse_peifer_purity = function(purityfile, samplename) {
 }
 
 parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
-  if (file.exists(segmentsfile)) {
+  if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=has_header, stringsAsFactors=F)
     if (!has_header) {
       colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence")
@@ -188,7 +188,7 @@ parse_mustonen_purity = function(purityfile, samplename) {
 }
 
 parse_broad = function(segmentsfile, purityfile, samplename) {
-  if (file.exists(segmentsfile)) {
+  if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     # Offset the start by 1 to make sure it does not overlap with the previous segment
     if ("ccf" %in% colnames(dat)) {
