@@ -115,6 +115,8 @@ parse_vanloowedge_purity = function(purityfile, samplename) {
 parse_peifer = function(segmentsfile, purityfile, samplename) {
   if (file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
+    # Remove negative size segments
+    dat = dat[(dat$end-dat$start) > 0, ]
     if ("cellular_prevalence" %in% colnames(dat)) {
       purity = parse_peifer_purity(purityfile, samplename)
       # What should be CP is encoded as CCF
