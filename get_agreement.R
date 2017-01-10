@@ -139,35 +139,40 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
 
 
 get_all_cn_fits = function(all_data, segment_index, allowed_methods) {
-  if (!is.na(all_data$map_vanloowedge) && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]])  && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]]) & "vanloowedge" %in% allowed_methods & length(all_data$map_vanloowedge$cn_states) >= segment_index) {
-    vanloowedge = all_data$map_vanloowedge$cn_states[[segment_index]]
-  } else {
-    vanloowedge = NULL
+  vanloowedge = NULL
+  if (!is.na(all_data$map_vanloowedge)) {
+    if (!is.na(all_data$map_vanloowedge$cn_states[[segment_index]])  && !is.na(all_data$map_vanloowedge$cn_states[[segment_index]]) & "vanloowedge" %in% allowed_methods & length(all_data$map_vanloowedge$cn_states) >= segment_index) {
+      vanloowedge = all_data$map_vanloowedge$cn_states[[segment_index]]
+    }
   }
   
-  if (!is.na(all_data$map_mustonen) && !is.na(all_data$map_mustonen$cn_states[[segment_index]])  && !is.na(all_data$map_mustonen$cn_states[[segment_index]]) && "mustonen" %in% allowed_methods & length(all_data$map_mustonen$cn_states) >= segment_index) {
-    mustonen = all_data$map_mustonen$cn_states[[segment_index]]
-  } else {
-    mustonen = NULL
+  mustonen = NULL
+  if (!is.na(all_data$map_mustonen)) {
+    if (!is.na(all_data$map_mustonen$cn_states[[segment_index]])  && !is.na(all_data$map_mustonen$cn_states[[segment_index]]) && "mustonen" %in% allowed_methods & length(all_data$map_mustonen$cn_states) >= segment_index) {
+      mustonen = all_data$map_mustonen$cn_states[[segment_index]]
+    }
   }
   
-  if (!is.na(all_data$map_peifer) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && "peifer" %in% allowed_methods & length(all_data$map_peifer$cn_states) >= segment_index) {
-    peifer = all_data$map_peifer$cn_states[[segment_index]]
-  } else {
-    peifer = NULL
+  peifer = NULL
+  if (!is.na(all_data$map_peifer)) {
+    if (!is.na(all_data$map_peifer$cn_states[[segment_index]]) && !is.na(all_data$map_peifer$cn_states[[segment_index]]) && "peifer" %in% allowed_methods & length(all_data$map_peifer$cn_states) >= segment_index) {
+      peifer = all_data$map_peifer$cn_states[[segment_index]]
+    }
   }
   
-  if (!is.na(all_data$map_broad) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && "broad" %in% allowed_methods & length(all_data$map_broad$cn_states) >= segment_index) {
-    broad = all_data$map_broad$cn_states[[segment_index]]
-  } else {
-    broad = NULL
-  }
-  
-  if (!is.na(all_data$map_dkfz) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && "dkfz" %in% allowed_methods & length(all_data$map_dkfz$cn_states) >= segment_index) {
-    dkfz = all_data$map_dkfz$cn_states[[segment_index]]
-  } else {
-    dkfz = NULL
-  }
+  broad = NULL
+  if (!is.na(all_data$map_broad)) {
+    if (!is.na(all_data$map_broad$cn_states[[segment_index]]) && !is.na(all_data$map_broad$cn_states[[segment_index]]) && "broad" %in% allowed_methods & length(all_data$map_broad$cn_states) >= segment_index) {
+      broad = all_data$map_broad$cn_states[[segment_index]]
+    }
+  } 
+
+  dkfz = NULL  
+  if (!is.na(all_data$map_dkfz)) {
+    if (!is.na(all_data$map_dkfz$cn_states[[segment_index]]) && !is.na(all_data$map_dkfz$cn_states[[segment_index]]) && "dkfz" %in% allowed_methods & length(all_data$map_dkfz$cn_states) >= segment_index) {
+      dkfz = all_data$map_dkfz$cn_states[[segment_index]]
+    }
+  } 
   
   check_missing = function(cn_state) if (!is.null(cn_state)) { return(cn_state[[1]][, c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn")]) } else { return(NA) } # || !is.na(cn_state)
   
@@ -201,7 +206,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
   num_methods = rep(0, nrow(segments))
   cn_states = list()
   for (i in 1:nrow(segments)) {
-    
+
     # establish all CN states for this segment - depending on the chromosome
     if (segments$chromosome[i]=="X" & sex=="female") {
       all_states = do.call(rbind, get_all_cn_fits(all_data, i, allowed_methods=allowed_methods_x_female))  
