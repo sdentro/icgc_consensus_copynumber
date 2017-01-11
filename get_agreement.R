@@ -38,11 +38,11 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
   map_broad = all_data$map_broad
   all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer)
   # combined_status = data.frame(segments, dkfz=map_dkfz$status, mustonen=map_mustonen$status, peifer=map_peifer$status, vanloowedge=map_vanloowedge$status, broad=map_broad$status)
-  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad)
+  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad, map_jabba)
   
   # Order both combined_status and method_overruled to have the same order - if method_overruled is supplied
   if (!is.na(method_overruled)) {
-    method_overruled = method_overruled[colnames(combined_status)[4:8]]
+    method_overruled = method_overruled[colnames(combined_status)[4:9]]
   }
   
   
@@ -54,23 +54,23 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
     ###########################################
     # Do different things when addressing X and Y because there are fewer methods reporting
     ###########################################
-    # Order of methods is: dkfz, mustonen, peifer, vanloowedge, broad
+    # Order of methods is: dkfz, mustonen, peifer, vanloowedge, broad, jabba
     if (segments$chromosome[i]=="X") {
       if (sex=="female") { allowed_methods_x = allowed_methods_x_female 
       } else { allowed_methods_x = allowed_methods_x_male }
-      selection = !is.na(combined_status[i,4:8]) & colnames(combined_status)[4:8] %in% allowed_methods_x
+      selection = !is.na(combined_status[i,4:9]) & colnames(combined_status)[4:9] %in% allowed_methods_x
       # These can be overwritten because X and Y are always the last chromosomes to be considered
       min_methods_with_call_on_segment = min_methods_with_call_on_segment_x
       min_methods_agree = min_methods_agree_x
       
     } else if (segments$chromosome[i]=="Y") {
-      selection = !is.na(combined_status[i,4:8]) & colnames(combined_status)[4:8] %in% allowed_methods_y
+      selection = !is.na(combined_status[i,4:9]) & colnames(combined_status)[4:9] %in% allowed_methods_y
       # These can be overwritten because X and Y are always the last chromosomes to be considered
       min_methods_with_call_on_segment = min_methods_with_call_on_segment_y
       min_methods_agree = min_methods_agree_y
       
     } else {
-      selection = !is.na(combined_status[i,4:8])
+      selection = !is.na(combined_status[i,4:9])
     }
     
     # Check if method overruling is requested
@@ -78,7 +78,7 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
       selection = selection & !method_overruled
     }
     # Finally select the indices that correspond the methods with results
-    methods_with_result = (4:8)[selection]
+    methods_with_result = (4:9)[selection]
     
     ###########################################
     # If no methods report a result, skip
@@ -174,13 +174,21 @@ get_all_cn_fits = function(all_data, segment_index, allowed_methods) {
     }
   } 
   
+  jabba = NULL  
+  if (!is.na(all_data$map_jabba)) {
+    if (!is.na(all_data$map_jabba$cn_states[[segment_index]]) && !is.na(all_data$map_jabba$cn_states[[segment_index]]) && "jabba" %in% allowed_methods & length(all_data$map_jabba$cn_states) >= segment_index) {
+      jabba = all_data$map_jabba$cn_states[[segment_index]]
+    }
+  } 
+  
   check_missing = function(cn_state) if (!is.null(cn_state)) { return(cn_state[[1]][, c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn")]) } else { return(NA) } # || !is.na(cn_state)
   
   return(list(vanloowedge=check_missing(vanloowedge),
                mustonen=check_missing(mustonen),
                peifer=check_missing(peifer),
                broad=check_missing(broad),
-               dkfz=check_missing(dkfz)))
+               dkfz=check_missing(dkfz),
+               jabba=check_missing(jabba)))
 }
 
 
@@ -197,9 +205,10 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
   map_peifer = all_data$map_peifer
   map_vanloowedge = all_data$map_vanloowedge
   map_broad = all_data$map_broad
-  all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer)
+  map_jabba = all_data$map_jaba
+  all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer, map_jabba=map_jabba)
   # combined_status = data.frame(segments, dkfz=map_dkfz$status, mustonen=map_mustonen$status, peifer=map_peifer$status, vanloowedge=map_vanloowedge$status, broad=map_broad$status)
-  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad)
+  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad, map_jabba)
 
   
   agree = rep(F, nrow(segments))
@@ -257,7 +266,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
     }
   }
 
-    segments$size = segments$end - segments$start
+  segments$size = segments$end - segments$start
   frac_genome_agree = round(sum(segments$size[agree]/1000) / sum(segments$size/1000), 2)
 
   return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, num_methods_agree=num_methods, cn_states=cn_states))
@@ -345,9 +354,9 @@ breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
 # Max allowed deviation from the expected ploidy
 max_expected_ploidy_diff = 0.5
-allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge")
-allowed_methods_x_male = c("dkfz", "mustonen")
-allowed_methods_y = c("dkfz")
+allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba")
+allowed_methods_x_male = c("dkfz", "mustonen", "jabba")
+allowed_methods_y = c("dkfz", "jabba")
 
 # Table with overrulings 
 # overrulings_pivot = readr::read_tsv("~/Documents/Projects/icgc/consensus_subclonal_copynumber/manual_review_overrulings_pivot_table.txt")
@@ -376,6 +385,8 @@ if (file.exists(breakpoints_file)) {
   mustonen_purityfile = "purity_ploidy_mustonen.txt"
   broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
   broad_purityfile = "purity_ploidy_broad.txt"
+  jabba_segmentsfile = paste0("jabba/", samplename, "_segments.txt")
+  jabba_purityfile = "purity_ploidy_jabba.txt"
   vanloowedge_baflogrfile = paste0("vanloowedge_baflogr/", samplename, "_baflogr.txt")
   broad_baflogrfile = paste0("broad_baflogr/", samplename, "_baflogr.txt")
   
@@ -383,13 +394,15 @@ if (file.exists(breakpoints_file)) {
                              vanloowedge=vanloowedge_segmentsfile,
                              peifer=peifer_segmentsfile,
                              mustonen=mustonen_segmentsfile,
-                             broad=broad_segmentsfile)
+                             broad=broad_segmentsfile,
+                             jabba=jabba_segmentsfile)
   
   method_purityfile = list(dkfz=dkfz_purityfile,
                            vanloowedge=vanloowedge_purityfile,
                            peifer=peifer_purityfile,
                            mustonen=mustonen_purityfile,
-                           broad=broad_purityfile)
+                           broad=broad_purityfile,
+                           jabba=jabba_purityfile)
   
   method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
                         broad=broad_baflogrfile)
@@ -402,6 +415,7 @@ if (file.exists(breakpoints_file)) {
   ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
   ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
+  ploidy_jabba = get_ploidy(segments, res$map_jabba)
   
   print("Getting clonal agreement...")
   agreement_clonal = get_frac_genome_agree(samplename, 
