@@ -523,7 +523,8 @@ if (file.exists(breakpoints_file)) {
                              vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
                              peifer=ifelse(!overrulings$peifer, peifer_segmentsfile, NA),
                              mustonen=ifelse(!overrulings$mustonen, mustonen_segmentsfile, NA),
-                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA))
+                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA),
+                             jabba=ifelse(!overrulings$jabba, jabba_segmentsfile, NA))
   
   all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
 
@@ -544,7 +545,8 @@ if (file.exists(breakpoints_file)) {
                              vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
                              peifer=ifelse(!overrulings$peifer, peifer_segmentsfile, NA),
                              mustonen=ifelse(!overrulings$mustonen, mustonen_segmentsfile, NA),
-                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA))
+                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA),
+                             jabba=ifelse(!overrulings$jabba, jabba_segmentsfile, NA))
   
   all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
   
