@@ -336,8 +336,9 @@ sex = args[3]
 # outdir = "output"
 
 
-# samplename = "005794f1-5a87-45b5-9811-83ddf6924568"
-# sex = "female"
+# samplename = "04b9837e-9ab5-4eb9-9a9c-ef49e3a62662"
+# sex = "male"
+
 
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 # expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz" # Removed after ploidy has been reinferred after fixes
@@ -464,6 +465,11 @@ if (file.exists(breakpoints_file)) {
   }
   method_overruled = data.frame(t(data.frame(unlist(overrulings))), stringsAsFactors=F)
   row.names(method_overruled) = NULL
+  
+  if (all(method_overruled[,1])) {
+    print("All methods overruled, quitting now")
+    q(save="no")
+  }
   
   print("Getting exclude overruled agreement...")
   # Check that there is an entry and that there is at least one method overruled
