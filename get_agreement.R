@@ -415,7 +415,7 @@ if (file.exists(breakpoints_file)) {
   ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
   ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
-  ploidy_jabba = get_ploidy(segments, res$map_jabba)
+  ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba)
   
   print("Getting clonal agreement...")
   agreement_clonal = get_frac_genome_agree(samplename, 
