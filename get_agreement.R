@@ -36,7 +36,8 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
   map_peifer = all_data$map_peifer
   map_vanloowedge = all_data$map_vanloowedge
   map_broad = all_data$map_broad
-  all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer)
+  map_jabba = all_data$map_jabba
+  all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer, map_jabba=map_jabba)
   # combined_status = data.frame(segments, dkfz=map_dkfz$status, mustonen=map_mustonen$status, peifer=map_peifer$status, vanloowedge=map_vanloowedge$status, broad=map_broad$status)
   combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad, map_jabba)
   
