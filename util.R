@@ -220,6 +220,25 @@ parse_broad_purity = function(purityfile, samplename) {
   return(purity)
 }
 
+parse_jabba = function(segmentsfile) {
+  if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
+    dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
+    dat$ccf = 1 # only clonal CN
+    return(dat[,c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence", "ccf")])
+  } else {
+    return(NA)
+  }
+}
+
+parse_jabba_purity = function(purityfile, samplename) {
+  purity = read.table(purityfile, header=T, stringsAsFactors=F)#[1,2]
+  purity = unique(purity[purity$sample==samplename,]$purity)
+  # if (length(purity)==0) {
+  #   purity = NA
+  # }
+  return(purity)
+}
+
 parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex, mustonen_has_header=F, cn_round_dkfz=T, num_threads=1) {
 
   do_mapping = function(index, all_dat, method_names, segments) {
@@ -238,11 +257,12 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
   dat_peifer = parse_peifer(method_segmentsfile[["peifer"]], method_purityfile[["peifer"]], samplename)
   dat_mustonen = parse_mustonen(method_segmentsfile[["mustonen"]], method_purityfile[["mustonen"]], samplename, has_header=mustonen_has_header)
   dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
+  dat_jabba = parse_jabba(method_segmentsfile[["jabba"]])
   
   res = mclapply(1:5,
                do_mapping,
-               list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad),
-               c("dkfz", "vanloowedge", "peifer", "mustonen", "broad"),
+               list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad, dat_jabba),
+               c("dkfz", "vanloowedge", "peifer", "mustonen", "broad", "jabba"),
                segments,
                mc.cores=num_threads)
   
@@ -251,6 +271,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
   map_peifer = res[[3]]$map
   map_mustonen = res[[4]]$map
   map_broad = res[[5]]$map
+  map_jabba = res[[6]]$map
   
   if (!is.null(method_baflogr)) {
     if (file.exists(method_baflogr$vanloowedge)) {
@@ -294,6 +315,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
               dat_peifer=dat_peifer, map_peifer=map_peifer,
               dat_mustonen=dat_mustonen, map_mustonen=map_mustonen,
               dat_broad=dat_broad, map_broad=map_broad,
+              dat_jabba=dat_jabba, map_jabba=map_jabba,
               map_vanloowedge_baflogr=map_vanloowedge_baflogr, map_broad_baflogr=map_broad_baflogr))
 }
 
@@ -303,7 +325,8 @@ parse_all_purities = function(samplename, method_purityfile) {
   purity_mustonen = parse_mustonen_purity(method_purityfile[["mustonen"]], samplename)
   purity_peifer = parse_peifer_purity(method_purityfile[["peifer"]], samplename)
   purity_vanloowedge = parse_vanloowedge_purity(method_purityfile[["vanloowedge"]], samplename)
-  return(list(broad=purity_broad, dkfz=purity_dkfz, mustonen=purity_mustonen, peifer=purity_peifer, vanloowedge=purity_vanloowedge))
+  purity_jabba = parse_jabba_purity(method_purityfile[["jabba"]], samplename)
+  return(list(broad=purity_broad, dkfz=purity_dkfz, mustonen=purity_mustonen, peifer=purity_peifer, vanloowedge=purity_vanloowedge, jabba=purity_jabba))
 }
 
 parse_dummy_cn_profile = function(nmaj=NA, nmin=NA) {
@@ -725,6 +748,14 @@ round_mustonen = function(map, i) {
   }
 }
 
+round_jabba = function(map, i) {
+  if (!is.na(map$cn_states[[i]][[1]])) {
+    return(map$cn_states[[i]][[1]][1,,drop=F])
+  } else {
+    return(data.frame())
+  }
+}
+
 round_dkfz = function(map, i, purity, rounding_up=T) {
   if (!is.null(map$cn_states[[i]]) && !is.na(map$cn_states[[i]]) && nrow(map$cn_states[[i]][[1]]) == 1) {
     temp = map$cn_states[[i]][[1]]
@@ -769,38 +800,25 @@ round_broad = function(map, i, rounding_up=T) {
   }
 }
 
-get_combined_status = function(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad) {
-  if (is.na(map_vanloowedge)) {
-    vanloowedge = rep(NA, nrow(segments))
-  } else {
-    vanloowedge = map_vanloowedge$status
+get_combined_status = function(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad, map_jabba) {
+  
+  get_status = function(map) {
+    if (is.na(map)) {
+      status = rep(NA, nrow(segments))
+    } else {
+      status = map$status
+    }
+    return(status)
   }
   
-  if (is.na(map_dkfz)) {
-    dkfz = rep(NA, nrow(segments))
-  } else {
-    dkfz = map_dkfz$status
-  }
+  vanloowedge = get_status(map_vanloowedge)
+  dkfz = get_status(map_dkfz)  
+  mustonen = get_status(map_mustonen)
+  peifer = get_status(map_peifer)
+  broad = get_status(map_broad)
+  jabba = get_status(map_jabba)  
   
-  if (is.na(map_mustonen)) {
-    mustonen = rep(NA, nrow(segments))
-  } else {
-    mustonen = map_mustonen$status
-  }
-  
-  if (is.na(map_peifer)) {
-    peifer = rep(NA, nrow(segments))
-  } else {
-    peifer = map_peifer$status
-  }
-  
-  if (is.na(map_broad)) {
-    broad = rep(NA, nrow(segments))
-  } else {
-    broad = map_broad$status
-  }
-  
-  combined_status = data.frame(segments, dkfz=dkfz, mustonen=mustonen, peifer=peifer, vanloowedge=vanloowedge, broad=broad)
+  combined_status = data.frame(segments, dkfz=dkfz, mustonen=mustonen, peifer=peifer, vanloowedge=vanloowedge, broad=broad, jabba=jabba)
   return(combined_status)
 }
 

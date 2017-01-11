@@ -15,6 +15,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   map_peifer = res$map_peifer
   map_vanloowedge = res$map_vanloowedge
   map_broad = res$map_broad
+  map_jabba = res$map_jabba
   
   # Calc ploidy of all profiles
   ploidy_vanloowedge = get_ploidy(segments, res$map_vanloowedge)
@@ -22,10 +23,11 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   ploidy_peifer = get_ploidy(segments, res$map_peifer)
   ploidy_dkfz = get_ploidy(segments, res$map_dkfz)
   ploidy_mustonen = get_ploidy(segments, res$map_mustonen)
+  ploidy_jabba = get_ploidy(segments, res$map_jabba)
   
   ploidies = data.frame(samplename=samplename,
-                        ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy,
-                        status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status)
+                        ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_jabba=ploidy_jabba$ploidy,
+                        status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status, status_jabba=ploidy_jabba$status)
   write.table(ploidies, file=file.path(outdir, "raw_ploidy", paste0(samplename, "_raw_ploidy.txt")), sep="\t", quote=F, row.names=F)
   
   res = parse_all_purities(samplename, method_purityfile)
@@ -34,14 +36,15 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   purity_broad = res$broad
   purity_peifer = res$peifer
   purity_mustonen = res$mustonen
+  purity_jabba = res$jabba
   
-  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad)
+  combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad, map_jabba)
   
   #####################################################################
   # Make inventory
   #####################################################################
-  
-  all_clonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="clonal") })
+  # Exclude mustonen and jabba here as they only report clonal CNA
+  all_clonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge",)], 1, function(x) { all(x=="clonal") })
   all_clonal[is.na(all_clonal)] = F
   all_subclonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="subclonal") })
   all_subclonal[is.na(all_subclonal)] = F
@@ -91,10 +94,11 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     plot_dkfz = make_plot(map_dkfz, segments, "ACEseq", max.plot.cn)
     plot_mustonen = make_plot(map_mustonen, segments, "CloneHD", max.plot.cn)
     plot_peifer = make_plot(map_peifer, segments, "Sclust", max.plot.cn)
+    plot_jabba = make_plot(map_peifer, segments, "JaBbA", max.plot.cn)
     print("Done plot profile")
     
-    png(file.path(outdir, "figures", paste0(samplename, "_copynumber_complete.png")), height=1500, width=1300)
-    grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, ncol=1), 
+    png(file.path(outdir, "figures", paste0(samplename, "_copynumber_complete.png")), height=1700, width=1300)
+    grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, plot_jabba, ncol=1), 
                  top=textGrob(samplename, gp = gpar(fontsize=25, face=2, col="black")))
     dev.off()
   }
@@ -103,7 +107,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   # Make rounded clonal copy number
   #####################################################################
   print("Rounding segments")
-  rounded_clonal = list(broad=data.frame(), dkfz=data.frame(), vanloowedge=data.frame(), peifer=data.frame(), mustonen=data.frame())
+  rounded_clonal = list(broad=data.frame(), dkfz=data.frame(), vanloowedge=data.frame(), peifer=data.frame(), mustonen=data.frame(), jabba=data.frame())
   for (i in 1:nrow(segments)) {
     
     if (!is.na(map_broad) && length(map_broad$cn_states) >= i) {
@@ -151,6 +155,15 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
       temp_entry$ccf = NA
       rounded_clonal$dkfz = rbind(rounded_clonal$dkfz, temp_entry)
     }
+    
+    if (!is.na(map_jabba) && length(map_jabba$cn_states) >= i) {
+      rounded_clonal$jabba = rbind(rounded_clonal$jabba, round_jabba(map_jabba, i))
+    } else {
+      temp_entry = get_dummy_cn_entry(segments[i,,drop=F])
+      colnames(temp_entry)[7] = "cellular_prevalence"
+      temp_entry$ccf = NA
+      rounded_clonal$jabba = rbind(rounded_clonal$jabba, temp_entry)
+    }
   }
   print("Calling unique")
   for (i in 1:length(rounded_clonal)) {
@@ -195,8 +208,12 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
     cn_bb_peifer = collapseRoundedClonal2bb(cn_states=rounded_clonal$peifer)
     plot_peifer = plot_profile(cn_bb_peifer, "Sclust", max.plot.cn=max.plot.cn)
     
-    png(file.path(outdir, "figures", paste0(samplename, "_copynumber_rounded_clonal.png")), height=1500, width=1300)
-    grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, ncol=1), 
+    print("JaBbA")
+    cn_bb_jabba = collapseRoundedClonal2bb(cn_states=rounded_clonal$jabba)
+    plot_jabba = plot_profile(cn_bb_jabba, "JaBbA", max.plot.cn=max.plot.cn)
+    
+    png(file.path(outdir, "figures", paste0(samplename, "_copynumber_rounded_clonal.png")), height=1700, width=1300)
+    grid.arrange(arrangeGrob(plot_broad, plot_dkfz, plot_vanloowedge, plot_mustonen, plot_peifer, plot_jabba, ncol=1), 
                  top=textGrob(samplename, gp = gpar(fontsize=25, face=2, col="black")))
     dev.off()
   }
@@ -235,6 +252,8 @@ peifer_purityfile = "purity_ploidy_peifer.txt"
 #mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
 mustonen_segmentsfile = paste0("mustonen/", samplename, "_segments.txt")
 mustonen_purityfile = "purity_ploidy_mustonen.txt"
+jabba_segmentsfile = paste0("jabba/", samplename, "_segments.txt")
+jabba_purityfile = "purity_ploidy_jabba.txt"
 broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
 broad_purityfile = "purity_ploidy_broad.txt"
 vanloowedge_baflogrfile = paste0("vanloowedge_baflogr/", samplename, "_baflogr.txt")
@@ -244,13 +263,15 @@ method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                            vanloowedge=vanloowedge_segmentsfile,
                            peifer=peifer_segmentsfile,
                            mustonen=mustonen_segmentsfile,
-                           broad=broad_segmentsfile)
+                           broad=broad_segmentsfile,
+                           jabba=jabba_segmentsfile)
 
 method_purityfile = list(dkfz=dkfz_purityfile,
                          vanloowedge=vanloowedge_purityfile,
                          peifer=peifer_purityfile,
                          mustonen=mustonen_purityfile,
-                         broad=broad_purityfile)
+                         broad=broad_purityfile,
+                         jabba=jabba_purityfile)
 
 method_baflogr = list(vanloowedge=vanloowedge_baflogrfile,
                       broad=broad_baflogrfile)
