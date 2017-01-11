@@ -206,7 +206,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_me
   map_peifer = all_data$map_peifer
   map_vanloowedge = all_data$map_vanloowedge
   map_broad = all_data$map_broad
-  map_jabba = all_data$map_jaba
+  map_jabba = all_data$map_jabba
   all_maps = list(map_broad=map_broad, map_dkfz=map_dkfz, map_mustonen=map_mustonen, map_vanloowedge=map_vanloowedge, map_peifer=map_peifer, map_jabba=map_jabba)
   # combined_status = data.frame(segments, dkfz=map_dkfz$status, mustonen=map_mustonen$status, peifer=map_peifer$status, vanloowedge=map_vanloowedge$status, broad=map_broad$status)
   combined_status = get_combined_status(segments, map_vanloowedge, map_dkfz, map_mustonen, map_peifer, map_broad, map_jabba)
@@ -342,7 +342,7 @@ sex = args[3]
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
 # samplename = "0040b1b6-b07a-4b6e-90ef-133523eaf412"
-# sex = "male"
+# sex = "female"
 # outdir = "output"
 
 
@@ -723,7 +723,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   
   calc_method_agreement = function(all_maps, segments, consensus_profile, segment_status) {
-    agreement = list(dkfz=0, vanloowedge=0, peifer=0, mustonen=0, broad=0)
+    agreement = list(dkfz=0, vanloowedge=0, peifer=0, mustonen=0, broad=0, jabba=0)
     # collect_mustonen_2 = c()
     for (i in 1:nrow(consensus_profile)) {
       # Exclude X and Y as not all methods report it and it would skew the metric
@@ -842,7 +842,8 @@ if (file.exists(breakpoints_file)) {
   purity_broad = res$broad
   purity_peifer = res$peifer
   purity_mustonen = res$mustonen
-  purities = data.frame(purity_dkfz=purity_dkfz, purity_vanloowedge=purity_vanloowedge, purity_peifer=purity_peifer, purity_mustonen=purity_mustonen, purity_broad=purity_broad)
+  purity_jabba = res$jabba
+  purities = data.frame(purity_dkfz=purity_dkfz, purity_vanloowedge=purity_vanloowedge, purity_peifer=purity_peifer, purity_mustonen=purity_mustonen, purity_broad=purity_broad, purity_jabba=purity_jabba)
   
   purities_tested = test_purities(purities, consensus_profile)
   
@@ -851,10 +852,11 @@ if (file.exists(breakpoints_file)) {
   ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
   ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
+  ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba)
   ploidy_consensus = round(calc_ploidy(profile_bb), 4)
   
-  ploidies = data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_consensus=ploidy_consensus,
-                        status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status)
+  ploidies = data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_jabba=ploidy_jabba$ploidy, ploidy_consensus=ploidy_consensus,
+                        status_vanloowedge=ploidy_vanloowedge$status, status_broad=ploidy_broad$status, status_peifer=ploidy_peifer$status, status_dkfz=ploidy_dkfz$status, status_mustonen=ploidy_mustonen$status, status_jabba=ploidy_jabba$status)
   
   
   agreement_summary = as.data.frame(t(data.frame(
@@ -883,13 +885,15 @@ if (file.exists(breakpoints_file)) {
                             exclude_mustonen=FALSE,
                             exclude_dkfz=FALSE,
                             exclude_peifer=FALSE,
-                            exclude_vanloowedge=FALSE)
+                            exclude_vanloowedge=FALSE,
+                            exclude_jabba=FALSE)
   } else {
     overruling = data.frame(exclude_broad=method_overruled$broad,
                             exclude_mustonen=method_overruled$mustonen,
                             exclude_dkfz=method_overruled$dkfz,
                             exclude_peifer=method_overruled$peifer,
-                            exclude_vanloowedge=method_overruled$vanloowedge)
+                            exclude_vanloowedge=method_overruled$vanloowedge,
+                            exclude_jabba=method_overruled$jabba)
   }
   
   summary_data = data.frame(samplename=samplename, 
