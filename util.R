@@ -259,7 +259,7 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
   dat_broad = parse_broad(method_segmentsfile[["broad"]], method_purityfile[["broad"]], samplename)
   dat_jabba = parse_jabba(method_segmentsfile[["jabba"]])
   
-  res = mclapply(1:5,
+  res = mclapply(1:6,
                do_mapping,
                list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad, dat_jabba),
                c("dkfz", "vanloowedge", "peifer", "mustonen", "broad", "jabba"),
