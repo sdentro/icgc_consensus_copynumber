@@ -44,7 +44,7 @@ create_rounded_copynumber = function(samplename, segments, outdir, method_segmen
   # Make inventory
   #####################################################################
   # Exclude mustonen and jabba here as they only report clonal CNA
-  all_clonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge",)], 1, function(x) { all(x=="clonal") })
+  all_clonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="clonal") })
   all_clonal[is.na(all_clonal)] = F
   all_subclonal = apply(combined_status[,c("broad", "dkfz", "peifer", "vanloowedge")], 1, function(x) { all(x=="subclonal") })
   all_subclonal[is.na(all_subclonal)] = F
