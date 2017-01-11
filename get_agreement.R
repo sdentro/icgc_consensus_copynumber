@@ -517,6 +517,7 @@ if (file.exists(breakpoints_file)) {
   peifer_segmentsfile = file.path(outdir, "peifer_rounded_clonal", paste0(samplename, "_segments.txt"))
   mustonen_segmentsfile = file.path(outdir, "mustonen_rounded_clonal", paste0(samplename, "_segments.txt"))
   broad_segmentsfile = file.path(outdir, "broad_rounded_clonal", paste0(samplename, "_segments.txt"))
+  jabba_segmentsfile = file.path(outdir, "jabba_rounded_clonal", paste0(samplename, "_segments.txt"))
   
   method_segmentsfile = list(dkfz=ifelse(!overrulings$dkfz, dkfz_segmentsfile, NA),
                              vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
@@ -537,6 +538,7 @@ if (file.exists(breakpoints_file)) {
   peifer_segmentsfile = file.path(outdir, "peifer_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   mustonen_segmentsfile = file.path(outdir, "mustonen_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   broad_segmentsfile = file.path(outdir, "broad_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
+  jabba_segmentsfile = file.path(outdir, "jabba_rounded_alt_clonal", paste0(samplename, "_segments.txt"))
   
   method_segmentsfile = list(dkfz=ifelse(!overrulings$dkfz, dkfz_segmentsfile, NA),
                              vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
