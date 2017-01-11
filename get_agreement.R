@@ -440,7 +440,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   expected_ploidy = read.table(expected_ploidy_file, header=T, stringsAsFactors=F)
   expected_ploidy = expected_ploidy[expected_ploidy$samplename==samplename, "ploidy"]
-  overrulings = list(broad=F, mustonen=F, dkfz=F, peifer=F, vanloowedge=F)
+  overrulings = list(broad=F, mustonen=F, dkfz=F, peifer=F, vanloowedge=F, jabba=F)
   # Compare to expected
   if (length(expected_ploidy) > 0 && !is.na(expected_ploidy)) {
     if (!is.na(ploidy_vanloowedge$ploidy) && abs(ploidy_vanloowedge$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
@@ -476,6 +476,13 @@ if (file.exists(breakpoints_file)) {
       all_data_clonal$map_mustonen = NA
       all_data_clonal$dat_mustonen = NA
       overrulings$mustonen = T
+    }
+    
+    if (!is.na(ploidy_jabba$ploidy) && abs(ploidy_jabba$ploidy-expected_ploidy) > max_expected_ploidy_diff) {
+      print("Overruling JaBbA ploidy")
+      all_data_clonal$map_jabba = NA
+      all_data_clonal$dat_jabba = NA
+      overrulings$jabba = T
     }
   }
   method_overruled = data.frame(t(data.frame(unlist(overrulings))), stringsAsFactors=F)
