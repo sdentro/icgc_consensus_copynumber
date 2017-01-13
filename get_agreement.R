@@ -488,8 +488,9 @@ if (file.exists(breakpoints_file)) {
   method_overruled = data.frame(t(data.frame(unlist(overrulings))), stringsAsFactors=F)
   row.names(method_overruled) = NULL
   
-  if (all(method_overruled[,1])) {
+  if (all(as.numeric(method_overruled[1,]))) {
     print("All methods overruled, quitting now")
+    print(data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_jabba=ploidy_jabba$ploidy, reference=expected_ploidy))
     q(save="no")
   }
   
