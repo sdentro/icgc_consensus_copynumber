@@ -224,6 +224,11 @@ parse_jabba = function(segmentsfile) {
   if (!is.na(segmentsfile) && file.exists(segmentsfile)) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     dat$ccf = 1 # only clonal CN
+    
+    if (any(dat$chromosome=="Y")) {
+      dat$major_cn[dat$chromosome=="Y"] = dat$copy_number[dat$chromosome=="Y"]
+    }
+    
     return(dat[,c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence", "ccf")])
   } else {
     return(NA)
@@ -232,11 +237,12 @@ parse_jabba = function(segmentsfile) {
 
 parse_jabba_purity = function(purityfile, samplename) {
   purity = read.table(purityfile, header=T, stringsAsFactors=F)#[1,2]
-  purity = unique(purity[purity$sample==samplename,]$purity)
-  # if (length(purity)==0) {
-  #   purity = NA
-  # }
-  return(purity)
+  if (samplename %in% purity$sample) {
+    purity = unique(purity[purity$sample==samplename,]$purity)
+    return(purity)
+  } else {
+    return(NA)
+  }
 }
 
 parse_all_profiles = function(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex, mustonen_has_header=F, cn_round_dkfz=T, num_threads=1) {
