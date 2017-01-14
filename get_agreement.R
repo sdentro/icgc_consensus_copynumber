@@ -196,7 +196,7 @@ get_all_cn_fits = function(all_data, segment_index, allowed_methods) {
 
 
 
-get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, min_methods_agree=0, min_methods_agree_x=0, min_methods_agree_y=0, min_methods_with_call_on_segment=2, min_methods_with_call_on_segment_x=2, min_methods_with_call_on_segment_y=2, method_overruled=NA, allowed_methods_x_female=c("dkfz", "mustonen", "vanloowedge"), allowed_methods_x_male=c("dkfz", "mustonen"), allowed_methods_y=c("dkfz")) {
+get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, allowed_methods_x_female, allowed_methods_x_male, allowed_methods_y, min_methods_agree=0, min_methods_agree_x=0, min_methods_agree_y=0, min_methods_with_call_on_segment=2, min_methods_with_call_on_segment_x=2, min_methods_with_call_on_segment_y=2, method_overruled=NA) {
   
 
   # Iterate over the segments and fetch a majority of the methods agrees on the CN state
