@@ -811,21 +811,18 @@ if (file.exists(breakpoints_file)) {
       return(TRUE)
     }
     
-    
     closest_method = names(rounded_ranking)[1]
     # Take the best method and exclude baflogr entries here
     closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_rounded))  & !grepl("baflogr", names(all_data_rounded)))
     closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
-      print(i)
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
         
         # Check if the method is allowed to make a call singlehandidly on this segment
         is_allowed = check_if_allowed(segments, closest_method_profile, closest_method, i, allowed_methods_x_female, allowed_methods_x_male)
-        if (!is_allowed) { next }
         
         # Take the fit of the method that is most often agreeing with the consensus
-        if (!is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]]) && nrow(closest_method_profile[[i]][[1]])>0 && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
+        if (is_allowed & !is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]]) && nrow(closest_method_profile[[i]][[1]])>0 && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
           consensus_profile$major_cn[i] = closest_method_profile[[i]][[1]]$major_cn[1]
           consensus_profile$minor_cn[i] = closest_method_profile[[i]][[1]]$minor_cn[1]
         } else {
@@ -839,12 +836,14 @@ if (file.exists(breakpoints_file)) {
               is_allowed = check_if_allowed(segments, other_closest_method, method_name, i, allowed_methods_x_female, allowed_methods_x_male)
               if (!is_allowed) { next }
               
-              consensus_profile$major_cn[i] = closest_method[[i]][[1]]$major_cn[1]
-              consensus_profile$minor_cn[i] = closest_method[[i]][[1]]$minor_cn[1]
-              consensus_profile$star[i] = 1
-              consensus_profile$level[i] = "f"
-              consensus_profile$methods_agree[i] = 1
-              break # stop the loop as we've found a match
+              if (!is.null(other_closest_method[[i]]) && !is.na(other_closest_method[[i]]) && nrow(other_closest_method[[i]][[1]])>0 && !is.na(other_closest_method[[i]][[1]]$minor_cn) && !is.na(other_closest_method[[i]][[1]]$major_cn)) {
+                consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
+                consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
+                consensus_profile$star[i] = 1
+                consensus_profile$level[i] = "f"
+                consensus_profile$methods_agree[i] = 1
+                break # stop the loop as we've found a match
+              }
             }
           }
         }
@@ -853,7 +852,6 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Filling in remaining segments with best method...")
-  save.image(paste0(samplename, "_debug.RData"))
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male)
   
   # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
