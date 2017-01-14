@@ -26,7 +26,7 @@
 #' @param min_methods_agree The minimum number of methods that is required to agree
 #' @param min_methods_with_call_on_segment The minimum number of methods with a call for a segment to be considered for agreement
 #' @param method_overruled A data frame with a single row and a column per method. Each cell contains TRUE if the method is to be overruled
-get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agree=0, min_methods_agree_x=0, min_methods_agree_y=0, min_methods_with_call_on_segment=2, min_methods_with_call_on_segment_x=2, min_methods_with_call_on_segment_y=2, method_overruled=NA, allowed_methods_x_female=c("dkfz", "mustonen", "vanloowedge"), allowed_methods_x_male=c("dkfz", "mustonen"), allowed_methods_y=c("dkfz")) {
+get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agree=0, min_methods_agree_x=0, min_methods_agree_y=0, min_methods_with_call_on_segment=2, min_methods_with_call_on_segment_x=2, min_methods_with_call_on_segment_y=2, method_overruled=NA, allowed_methods_x_female=c("dkfz", "mustonen", "vanloowedge", "jabba", "broad"), allowed_methods_x_male=c("dkfz", "mustonen", "jabba", "broad"), allowed_methods_y=c("dkfz", "jabba")) {
   # breakpoints = read.table(paste0(samplename, "_consensus_breakpoints.txt"), header=T, stringsAsFactors=F)
   # segments = breakpoints2segments(breakpoints)
 
@@ -125,7 +125,9 @@ get_frac_genome_agree = function(samplename, all_data, segments, min_methods_agr
       
       cn_states[[i]] = inventory
       inventory = na.omit(inventory)
-      agree[i] = all(inventory$major_cn==inventory$major_cn[1]) & all(inventory$minor_cn==inventory$minor_cn[1]) & nrow(inventory)>0 & inventory$major_cn[1] > -1 & inventory$minor_cn[1] > -2
+      agree[i] = sum(inventory$major_cn==inventory$major_cn[1] & inventory$minor_cn==inventory$minor_cn[1]) >= min_methods_agree & 
+        length(methods_with_result) >= min_methods_with_call_on_segment &
+        nrow(inventory)>0 & inventory$major_cn[1] > -1 & inventory$minor_cn[1] > -2
       num_methods[i] = nrow(inventory)
     } else {
       cn_states[[i]] = NA
@@ -341,7 +343,7 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "0040b1b6-b07a-4b6e-90ef-133523eaf412"
+# samplename = "0168a2a6-c3af-4d58-a51c-d33f0fc7876d"
 # sex = "female"
 # outdir = "output"
 
@@ -422,9 +424,9 @@ if (file.exists(breakpoints_file)) {
   agreement_clonal = get_frac_genome_agree(samplename, 
                                            all_data_clonal, 
                                            segments, 
-                                           min_methods_agree=5, 
-                                           min_methods_agree_x=2, 
-                                           min_methods_agree_y=2, 
+                                           min_methods_agree=6, 
+                                           min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male),  length(allowed_methods_x_female)),
+                                           min_methods_agree_y=length(allowed_methods_y), 
                                            allowed_methods_x_female=allowed_methods_x_female, 
                                            allowed_methods_x_male=allowed_methods_x_male, 
                                            allowed_methods_y=allowed_methods_y)
@@ -433,7 +435,15 @@ if (file.exists(breakpoints_file)) {
   # Agreement exclude 1
   #####################################################################
   print("Getting exclude 1 agreement...")
-  agreement_clonal_exclude_1 = get_frac_genome_agree(samplename, all_data_clonal, segments, min_methods_agree=4, min_methods_agree_x=2, min_methods_agree_y=2, allowed_methods_x_female=allowed_methods_x_female, allowed_methods_x_male=allowed_methods_x_male, allowed_methods_y=allowed_methods_y)
+  agreement_clonal_exclude_1 = get_frac_genome_agree(samplename, 
+                                                     all_data_clonal, 
+                                                     segments, 
+                                                     min_methods_agree=5, 
+                                                     min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male)-1,  length(allowed_methods_x_female)-1),
+                                                     min_methods_agree_y=length(allowed_methods_y), 
+                                                     allowed_methods_x_female=allowed_methods_x_female, 
+                                                     allowed_methods_x_male=allowed_methods_x_male, 
+                                                     allowed_methods_y=allowed_methods_y)
   
   #####################################################################
   # Agreement after excluding overruled profiles
@@ -594,7 +604,8 @@ if (file.exists(breakpoints_file)) {
   agreement_rounded_majority_vote = get_frac_genome_agree_maj_vote(samplename, 
                                                                    all_data_rounded, 
                                                                    segments, 
-                                                                   method_overruled=method_overruled, 
+                                                                   method_overruled=method_overruled,
+                                                                   min_methods_agree=4,
                                                                    min_methods_agree_x=2, 
                                                                    min_methods_agree_y=2, 
                                                                    allowed_methods_x_female=allowed_methods_x_female, 
@@ -604,6 +615,7 @@ if (file.exists(breakpoints_file)) {
                                                                        all_data_rounded_alt, 
                                                                        segments, 
                                                                        method_overruled=method_overruled,
+                                                                       min_methods_agree=4,
                                                                        min_methods_agree_x=2, 
                                                                        min_methods_agree_y=2, 
                                                                        allowed_methods_x_female=allowed_methods_x_female, 
