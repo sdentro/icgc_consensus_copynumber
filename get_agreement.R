@@ -778,7 +778,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Create the consensus using the method that is most often agreeing with the consensus so far
   #####################################################################
-  update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded) {
+  update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded, segments) {
   
     closest_method = names(rounded_ranking)[1]
     # Take the best method and exclude baflogr entries here
@@ -798,11 +798,11 @@ if (file.exists(breakpoints_file)) {
               
               # Don't allow not to be used methods for X and Y segments
               method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[1]
-              if (consensus_profile$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
+              if (segments$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
                 next()
               }
               
-              if (consensus_profile$chromosome[i] %in% c("X", "Y") & sex=="male" & !method_name %in% allowed_methods_x_male) {
+              if (segments$chromosome[i] %in% c("X", "Y") & sex=="male" & !method_name %in% allowed_methods_x_male) {
                 next()
               }
               
@@ -822,7 +822,7 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Filling in remaining segments with best method...")
-  consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded)
+  consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments)
   
   # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
   if (nrow(consensus_profile) < nrow(segments)) {
