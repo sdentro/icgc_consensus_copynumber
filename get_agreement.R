@@ -805,9 +805,10 @@ if (file.exists(breakpoints_file)) {
           print(paste0("Excluding ", method_name, " from adding in a large hom del, chrom: ", segments$chromosome[i], " size: ", (segments$end[i]/1000000-segments$start[i]/1000000), "Mb"))
           return(FALSE)
         }
+      }
         
-        # No other clause triggered, therefore allowed
-        return(TRUE)
+      # No other clause triggered, therefore allowed
+      return(TRUE)
     }
     
     
