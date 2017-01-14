@@ -795,20 +795,31 @@ if (file.exists(breakpoints_file)) {
           for (j in which(grepl("map_", names(all_data_rounded)))) {
             if (!is.na(all_data_rounded[[j]])) {
               other_closest_method = all_data_rounded[[j]]$cn_states
+              method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[1]              
+              
+              # Exclude a single method from adding a large hom del
+              maj = other_closest_method[[i]][[1]]$major_cn[1]
+              min = other_closest_method[[i]][[1]]$minor_cn[1]
+              
+              if (maj==0 & min==0 & (segments$end[i]/1000000-segments$start[i]/1000000) > 20) {
+                print(paste0("Excluding ", method_name, " from adding in a large hom del, chrom: ", segments$chromosome[i], " size: ", (segments$end[i]/1000000-segments$start[i]/1000000), "Mb"))
+                next()
+              }
               
               # Don't allow not to be used methods for X and Y segments
-              method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[1]
               if (segments$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
-                next()
+                print(paste0("Excluding ", method_name, " from adding call on, chrom: ", segments$chromosome[i]))
+                next
               }
               
               if (segments$chromosome[i] %in% c("X", "Y") & sex=="male" & !method_name %in% allowed_methods_x_male) {
-                next()
+                print(paste0("Excluding ", method_name, " from adding call on, chrom: ", segments$chromosome[i]))
+                next
               }
               
               if (!is.null(other_closest_method[[i]]) && !is.na(other_closest_method[[i]]) && nrow(other_closest_method[[i]][[1]])>0 && !is.na(other_closest_method[[i]][[1]]$minor_cn) && !is.na(other_closest_method[[i]][[1]]$major_cn)) {
-                consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
-                consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
+                consensus_profile$major_cn[i] = maj
+                consensus_profile$minor_cn[i] = min
                 consensus_profile$star[i] = 1
                 consensus_profile$level[i] = "f"
                 consensus_profile$methods_agree[i] = 1
