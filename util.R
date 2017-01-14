@@ -70,6 +70,8 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
       dat$minor_cn[maj_too_low | min_too_low] = NA
     }
     
+    # Remove all NA calls
+    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     return(dat)
   } else {
     return(NA)
@@ -104,6 +106,8 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename, sex) {
       dat = dat[dat$chromosome != "X",]
     }
     
+    # Remove all NA calls
+    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     return(dat)
   } else {
     return(NA)
@@ -135,6 +139,8 @@ parse_peifer = function(segmentsfile, purityfile, samplename) {
     } else {
       # Annotations don't need any adjustments
     }
+    # Remove all NA calls
+    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     return(dat)
   } else {
     return(NA)
@@ -182,6 +188,8 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
       dat$chromosome[dat$chromosome==24] = "Y"
     }
     
+    # Remove all NA calls
+    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     return(dat)
   } else {
     return(NA)
@@ -212,6 +220,9 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
     # purity = read.table(purityfile, header=F, stringsAsFactors=F)
     # dat$ccf = dat$cellular_prevalence / purity[1,2]
     # dat$cellular_prevalence = dat$ccf * purity
+    
+    # Remove all NA calls
+    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     return(dat)
   } else {
     return(NA)
@@ -240,6 +251,8 @@ parse_jabba = function(segmentsfile) {
       dat$minor_cn[dat$chromosome=="Y"] = 0
     }
     
+    # Remove all NA calls
+    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     return(dat[,c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence", "ccf")])
   } else {
     return(NA)
