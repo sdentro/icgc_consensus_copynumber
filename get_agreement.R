@@ -343,8 +343,8 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "0168a2a6-c3af-4d58-a51c-d33f0fc7876d"
-# sex = "female"
+# samplename = "39a5d94d-e8c8-4057-be96-362ffbafb94d"
+# sex = "male"
 # outdir = "output"
 
 
@@ -811,6 +811,7 @@ if (file.exists(breakpoints_file)) {
                 consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
                 consensus_profile$star[i] = 1
                 consensus_profile$level[i] = "f"
+                consensus_profile$methods_agree[i] = 1
                 break # stop the loop as we've found a match
               }
             }
