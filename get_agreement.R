@@ -778,14 +778,50 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Create the consensus using the method that is most often agreeing with the consensus so far
   #####################################################################
-  update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded, segments) {
+  update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male) {
   
+    #' Function that looks for whether a method is allowed to make a call. Some methods do not
+    #' participate on X and Y, while single methods are restricted from adding large homozygous
+    #' deletions
+    check_if_allowed = function(segments, closest_method, method_name, i, allowed_methods_x_female, allowed_methods_x_male) {
+      # Don't allow not to be used methods for X and Y segments
+      if (segments$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
+        print(paste0("Excluding ", method_name, " from adding call on, chrom: ", segments$chromosome[i]))
+        return(FALSE)
+      }
+      
+      if (segments$chromosome[i] %in% c("X", "Y") & sex=="male" & !method_name %in% allowed_methods_x_male) {
+        print(paste0("Excluding ", method_name, " from adding call on, chrom: ", segments$chromosome[i]))
+        return(FALSE)
+      }
+      
+      if (!is.null(closest_method[[i]]) && !is.na(closest_method[[i]]) && nrow(closest_method[[i]][[1]])>0 && !is.na(closest_method[[i]][[1]]$minor_cn) && !is.na(closest_method[[i]][[1]]$major_cn)) {
+        
+        # Exclude a single method from adding a large hom del
+        maj = closest_method[[i]][[1]]$major_cn[1]
+        min = closest_method[[i]][[1]]$minor_cn[1]
+        
+        if (maj==0 & min==0 & (segments$end[i]/1000000-segments$start[i]/1000000) > 20) {
+          print(paste0("Excluding ", method_name, " from adding in a large hom del, chrom: ", segments$chromosome[i], " size: ", (segments$end[i]/1000000-segments$start[i]/1000000), "Mb"))
+          return(FALSE)
+        }
+        
+        # No other clause triggered, therefore allowed
+        return(TRUE)
+    }
+    
+    
     closest_method = names(rounded_ranking)[1]
     # Take the best method and exclude baflogr entries here
     closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_rounded))  & !grepl("baflogr", names(all_data_rounded)))
     closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
+        
+        # Check if the method is allowed to make a call singlehandidly on this segment
+        is_allowed = check_if_allowed(segments, closest_method_profile, closest_method, i)
+        if (!is_allowed) { next }
+        
         # Take the fit of the method that is most often agreeing with the consensus
         if (!is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]]) && nrow(closest_method_profile[[i]][[1]])>0 && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
           consensus_profile$major_cn[i] = closest_method_profile[[i]][[1]]$major_cn[1]
@@ -795,37 +831,18 @@ if (file.exists(breakpoints_file)) {
           for (j in which(grepl("map_", names(all_data_rounded)))) {
             if (!is.na(all_data_rounded[[j]])) {
               other_closest_method = all_data_rounded[[j]]$cn_states
-              method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[2]              
-              
-              # Don't allow not to be used methods for X and Y segments
-              if (segments$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
-                print(paste0("Excluding ", method_name, " from adding call on, chrom: ", segments$chromosome[i]))
-                next
-              }
-              
-              if (segments$chromosome[i] %in% c("X", "Y") & sex=="male" & !method_name %in% allowed_methods_x_male) {
-                print(paste0("Excluding ", method_name, " from adding call on, chrom: ", segments$chromosome[i]))
-                next
-              }
-              
-              if (!is.null(other_closest_method[[i]]) && !is.na(other_closest_method[[i]]) && nrow(other_closest_method[[i]][[1]])>0 && !is.na(other_closest_method[[i]][[1]]$minor_cn) && !is.na(other_closest_method[[i]][[1]]$major_cn)) {
+              method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[2]          
                 
-                # Exclude a single method from adding a large hom del
-                maj = other_closest_method[[i]][[1]]$major_cn[1]
-                min = other_closest_method[[i]][[1]]$minor_cn[1]
-                
-                if (maj==0 & min==0 & (segments$end[i]/1000000-segments$start[i]/1000000) > 20) {
-                  print(paste0("Excluding ", method_name, " from adding in a large hom del, chrom: ", segments$chromosome[i], " size: ", (segments$end[i]/1000000-segments$start[i]/1000000), "Mb"))
-                  next()
-                }
-                
-                consensus_profile$major_cn[i] = maj
-                consensus_profile$minor_cn[i] = min
-                consensus_profile$star[i] = 1
-                consensus_profile$level[i] = "f"
-                consensus_profile$methods_agree[i] = 1
-                break # stop the loop as we've found a match
-              }
+              # Check if the method is allowed to make a call singlehandidly on this segment
+              is_allowed = check_if_allowed(segments, other_closest_method, method_name, i)
+              if (!is_allowed) { next }
+              
+              consensus_profile$major_cn[i] = closest_method[[i]][[1]]$major_cn[1]
+              consensus_profile$minor_cn[i] = closest_method[[i]][[1]]$minor_cn[1]
+              consensus_profile$star[i] = 1
+              consensus_profile$level[i] = "f"
+              consensus_profile$methods_agree[i] = 1
+              break # stop the loop as we've found a match
             }
           }
         }
@@ -834,7 +851,7 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Filling in remaining segments with best method...")
-  consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments)
+  consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male)
   
   # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
   if (nrow(consensus_profile) < nrow(segments)) {
