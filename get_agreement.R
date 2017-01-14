@@ -820,7 +820,7 @@ if (file.exists(breakpoints_file)) {
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
         
         # Check if the method is allowed to make a call singlehandidly on this segment
-        is_allowed = check_if_allowed(segments, closest_method_profile, closest_method, i)
+        is_allowed = check_if_allowed(segments, closest_method_profile, closest_method, i, allowed_methods_x_female, allowed_methods_x_male)
         if (!is_allowed) { next }
         
         # Take the fit of the method that is most often agreeing with the consensus
@@ -835,7 +835,7 @@ if (file.exists(breakpoints_file)) {
               method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[2]          
                 
               # Check if the method is allowed to make a call singlehandidly on this segment
-              is_allowed = check_if_allowed(segments, other_closest_method, method_name, i)
+              is_allowed = check_if_allowed(segments, other_closest_method, method_name, i, allowed_methods_x_female, allowed_methods_x_male)
               if (!is_allowed) { next }
               
               consensus_profile$major_cn[i] = closest_method[[i]][[1]]$major_cn[1]
