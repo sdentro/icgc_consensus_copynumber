@@ -853,6 +853,7 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Filling in remaining segments with best method...")
+  save.image(paste0(samplename, "_debug.RData"))
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male)
   
   # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
