@@ -60,6 +60,15 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
       dat$chromosome[dat$chromosome==24] = "Y"
     }
     
+    maj_too_low = dat$major_cn < 0
+    maj_too_low[is.na(maj_too_low)] = F
+    min_too_low = dat$minor_cn < 0
+    min_too_low[is.na(min_too_low)] = F
+    if (any(maj_too_low | min_too_low)) {
+      dat$major_cn[maj_too_low | min_too_low] = NA
+      dat$minor_cn[maj_too_low | min_too_low] = NA
+    }
+    
     return(dat)
   } else {
     return(NA)
