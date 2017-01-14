@@ -227,7 +227,7 @@ parse_jabba = function(segmentsfile) {
     
     if (any(dat$chromosome=="Y")) {
       dat$major_cn[dat$chromosome=="Y"] = dat$copy_number[dat$chromosome=="Y"]
-      dat$major_cn[dat$chromosome=="Y"] = 0
+      dat$minor_cn[dat$chromosome=="Y"] = 0
     }
     
     return(dat[,c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence", "ccf")])
