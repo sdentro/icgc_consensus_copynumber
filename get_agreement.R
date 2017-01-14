@@ -794,6 +794,17 @@ if (file.exists(breakpoints_file)) {
           for (j in which(grepl("map_", names(all_data_rounded)))) {
             if (!is.na(all_data_rounded[[j]])) {
               other_closest_method = all_data_rounded[[j]]$cn_states
+              
+              # Don't allow not to be used methods for X and Y segments
+              method_name = unlist(stringr::str_split(names(all_data_rounded)[j]))[1]
+              if (consensus_profile$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
+                next()
+              }
+              
+              if (consensus_profile$chromosome[i] %in% c("X", "Y") & sex=="male" & !method_name %in% allowed_methods_x_male) {
+                next()
+              }
+              
               if (!is.null(other_closest_method[[i]]) && !is.na(other_closest_method[[i]]) && nrow(other_closest_method[[i]][[1]])>0 && !is.na(other_closest_method[[i]][[1]]$minor_cn) && !is.na(other_closest_method[[i]][[1]]$major_cn)) {
                 consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
                 consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
