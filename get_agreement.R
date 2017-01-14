@@ -357,9 +357,9 @@ breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
 # the reference ploidy is multiplied by this factor to determine how much of a deviation is tolerated
 max_expected_ploidy_diff_factor = 0.25
-allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba")
-allowed_methods_x_male = c("dkfz", "mustonen", "jabba")
-allowed_methods_y = c("dkfz", "jabba")
+allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba", "broad")
+allowed_methods_x_male = c("dkfz", "mustonen", "broad")
+allowed_methods_y = c("dkfz", "jabba", "broad")
 
 # Table with overrulings 
 # overrulings_pivot = readr::read_tsv("~/Documents/Projects/icgc/consensus_subclonal_copynumber/manual_review_overrulings_pivot_table.txt")
