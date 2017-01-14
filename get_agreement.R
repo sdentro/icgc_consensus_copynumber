@@ -797,7 +797,7 @@ if (file.exists(breakpoints_file)) {
               other_closest_method = all_data_rounded[[j]]$cn_states
               
               # Don't allow not to be used methods for X and Y segments
-              method_name = unlist(stringr::str_split(names(all_data_rounded)[j]))[1]
+              method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[1]
               if (consensus_profile$chromosome[i] %in% c("X", "Y") & sex=="female" & !method_name %in% allowed_methods_x_female) {
                 next()
               }

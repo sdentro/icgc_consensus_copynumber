@@ -4,6 +4,7 @@ suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(grid))
 suppressPackageStartupMessages(library(gridExtra))
 suppressPackageStartupMessages(library(parallel))
+suppressPackageStartupMessages(library(stringr))
 
 # Static for plot
 RECT_HEIGHT = 0.07
