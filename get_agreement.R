@@ -817,6 +817,7 @@ if (file.exists(breakpoints_file)) {
     closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_rounded))  & !grepl("baflogr", names(all_data_rounded)))
     closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
+      print(i)
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
         
         # Check if the method is allowed to make a call singlehandidly on this segment
