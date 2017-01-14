@@ -355,8 +355,8 @@ sex = args[3]
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 # expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz" # Removed after ploidy has been reinferred after fixes
 expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
-# Max allowed deviation from the expected ploidy
-max_expected_ploidy_diff = 0.5
+# the reference ploidy is multiplied by this factor to determine how much of a deviation is tolerated
+max_expected_ploidy_diff_factor = 0.25
 allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba")
 allowed_methods_x_male = c("dkfz", "mustonen", "jabba")
 allowed_methods_y = c("dkfz", "jabba")
@@ -450,6 +450,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   expected_ploidy = read.table(expected_ploidy_file, header=T, stringsAsFactors=F)
   expected_ploidy = expected_ploidy[expected_ploidy$samplename==samplename, "ploidy"]
+  max_expected_ploidy_diff = expected_ploidy*max_expected_ploidy_diff_factor
   overrulings = list(broad=F, mustonen=F, dkfz=F, peifer=F, vanloowedge=F, jabba=F)
   # Compare to expected
   if (length(expected_ploidy) > 0 && !is.na(expected_ploidy)) {
