@@ -22,6 +22,10 @@ breakpoints2segments = function(breakpoints) {
 }
 
 remove_chr21_artifact = function(dat) {
+  if (nrow(dat)==0) {
+    return(dat)
+  }
+  
   dat.gr = makeGRangesFromDataFrame(dat)
   regions_remove = makeGRangesFromDataFrame(data.frame(chrom=21, start=1, end=10698195))
   overlap = findOverlaps(dat.gr, regions_remove)
