@@ -343,8 +343,8 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "aff5793b-3197-4d1d-bf0a-9b0ded5f2937"
-# sex = "female"
+# samplename = "b7fbd99c-dea0-4448-a430-7f94c611e702"
+# sex = "male"
 # outdir = "output"
 
 
@@ -774,9 +774,23 @@ if (file.exists(breakpoints_file)) {
   print("Calculating method agreements with profile so far...")
   frac_agreement_clonal = calc_method_agreement(all_data_clonal, segments, consensus_profile, "clonal")
   clonal_ranking = sort(unlist(frac_agreement_clonal), decreasing=T)
+  print("BEFORE")
+  print(clonal_ranking)
+  if (all(frac_agreement_clonal==0)) {
+    # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
+    clonal_ranking = c(colnames(overrulings)[!overrulings], colnames(overrulings)[overrulings])
+  }
+  print("AFTER")
+  print(clonal_ranking)
   
   frac_agreement_rounded = calc_method_agreement(all_data_rounded, segments, consensus_profile, "clonal")
   rounded_ranking = sort(unlist(frac_agreement_rounded), decreasing=T)
+  if (all(frac_agreement_clonal==0)) {
+    # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
+    rounded_ranking = c(colnames(overrulings)[!overrulings], colnames(overrulings)[overrulings])
+  }
+  
+
   
   # TODO: Add step to weed out cases that are ploidy uncertain (level g/star 0) and ploidy certain (level f/star 1)
   
