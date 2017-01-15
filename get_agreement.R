@@ -499,7 +499,7 @@ if (file.exists(breakpoints_file)) {
   method_overruled = data.frame(t(data.frame(unlist(overrulings))), stringsAsFactors=F)
   row.names(method_overruled) = NULL
   
-  if (all(as.numeric(method_overruled[1,]))) {
+  if (all(as.logical(method_overruled[1,]))) {
     print("All methods overruled, quitting now")
     print(data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_jabba=ploidy_jabba$ploidy, reference=expected_ploidy))
     q(save="no")
@@ -778,7 +778,7 @@ if (file.exists(breakpoints_file)) {
   print(clonal_ranking)
   if (all(frac_agreement_clonal==0)) {
     # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
-    clonal_ranking = c(colnames(overrulings)[!overrulings], colnames(overrulings)[overrulings])
+    clonal_ranking = c(colnames(method_overruled)[!method_overruled[1,]], colnames(method_overruled)[method_overruled[1,]])
   }
   print("AFTER")
   print(clonal_ranking)
@@ -787,7 +787,7 @@ if (file.exists(breakpoints_file)) {
   rounded_ranking = sort(unlist(frac_agreement_rounded), decreasing=T)
   if (all(frac_agreement_clonal==0)) {
     # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
-    rounded_ranking = c(colnames(overrulings)[!overrulings], colnames(overrulings)[overrulings])
+    rounded_ranking = c(colnames(method_overruled)[!method_overruled[1,]], colnames(method_overruled)[method_overruled[1,]])
   }
   
 
