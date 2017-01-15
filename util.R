@@ -83,7 +83,7 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     # Remove all NA calls and artifacts
     dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     dat = remove_chr21_artifact(dat)
-    
+    if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
     return(NA)
@@ -121,6 +121,7 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename, sex) {
     # Remove all NA calls and artifacts
     dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     dat = remove_chr21_artifact(dat)
+    if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
     return(NA)
@@ -156,6 +157,7 @@ parse_peifer = function(segmentsfile, purityfile, samplename) {
     # Remove all NA calls and artifacts
     dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     dat = remove_chr21_artifact(dat)
+    if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
     return(NA)
@@ -206,6 +208,7 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
     # Remove all NA calls and artifacts
     dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     dat = remove_chr21_artifact(dat)
+    if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
     return(NA)
@@ -240,6 +243,7 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
     # Remove all NA calls and artifacts
     dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
     dat = remove_chr21_artifact(dat)
+    if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
     return(NA)
