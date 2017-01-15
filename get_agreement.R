@@ -778,6 +778,7 @@ if (file.exists(breakpoints_file)) {
   if (all(frac_agreement_clonal==0)) {
     # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
     clonal_ranking = c(colnames(method_overruled)[method_overruled==FALSE], colnames(method_overruled)[method_overruled==TRUE])
+    names(rounded_ranking) = rounded_ranking
   }
   
   frac_agreement_rounded = calc_method_agreement(all_data_rounded, segments, consensus_profile, "clonal")
@@ -785,6 +786,7 @@ if (file.exists(breakpoints_file)) {
   if (all(frac_agreement_clonal==0)) {
     # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
     rounded_ranking = c(colnames(method_overruled)[method_overruled==FALSE], colnames(method_overruled)[method_overruled==TRUE])
+    names(rounded_ranking) = rounded_ranking
   }
   
   #####################################################################
