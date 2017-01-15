@@ -343,8 +343,8 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "39a5d94d-e8c8-4057-be96-362ffbafb94d"
-# sex = "male"
+# samplename = "aff5793b-3197-4d1d-bf0a-9b0ded5f2937"
+# sex = "female"
 # outdir = "output"
 
 
@@ -648,8 +648,13 @@ if (file.exists(breakpoints_file)) {
       } else if (agreement_clonal_overrule$agree[i]) {
         # pivot table
         new_entry = agreement_clonal_overrule$cn_states[[i]][1,2:3]
-        new_entry$star = 3
-        new_entry$level = "c"
+        if (agreement_clonal_overrule$num_methods_agree[i] %in% c(5,6)) {
+          new_entry$star = 3
+          new_entry$level = "c"
+        } else {
+          new_entry$star = 2
+          new_entry$level = "c"
+        }
         new_entry$methods_agree = agreement_clonal_overrule$num_methods_agree[i]
         
       } else if (agreement_rounded$agree[i]) {

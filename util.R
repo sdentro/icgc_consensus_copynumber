@@ -253,6 +253,9 @@ parse_jabba = function(segmentsfile) {
     
     # Remove all NA calls
     dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
+    
+    if (nrow(dat)==0) { return(NA) }
+    
     return(dat[,c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "cellular_prevalence", "ccf")])
   } else {
     return(NA)
@@ -295,6 +298,13 @@ parse_all_profiles = function(samplename, segments, method_segmentsfile, method_
                c("dkfz", "vanloowedge", "peifer", "mustonen", "broad", "jabba"),
                segments,
                mc.cores=num_threads)
+  
+  # res = list()
+  # for (i in 1:6) {
+  #   res[[length(res)+1]] = do_mapping(i, list(dat_dkfz, dat_vanloowedge, dat_peifer, dat_mustonen, dat_broad, dat_jabba),
+  #                                     c("dkfz", "vanloowedge", "peifer", "mustonen", "broad", "jabba"),
+  #                                     segments)
+  # }
   
   map_dkfz = res[[1]]$map
   map_vanloowedge = res[[2]]$map
