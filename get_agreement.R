@@ -343,8 +343,8 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "b7fbd99c-dea0-4448-a430-7f94c611e702"
-# sex = "male"
+# samplename = "f393bb0c-4178-ca4a-e040-11ac0d48455f"
+# sex = "female"
 # outdir = "output"
 
 
@@ -355,6 +355,7 @@ sex = args[3]
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 # expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz" # Removed after ploidy has been reinferred after fixes
 expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
+marked_unknown_file = "icgc_marked_uknown.lst"
 # the reference ploidy is multiplied by this factor to determine how much of a deviation is tolerated
 max_expected_ploidy_diff_factor = 0.25
 allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba", "broad")
@@ -774,25 +775,17 @@ if (file.exists(breakpoints_file)) {
   print("Calculating method agreements with profile so far...")
   frac_agreement_clonal = calc_method_agreement(all_data_clonal, segments, consensus_profile, "clonal")
   clonal_ranking = sort(unlist(frac_agreement_clonal), decreasing=T)
-  print("BEFORE")
-  print(clonal_ranking)
   if (all(frac_agreement_clonal==0)) {
     # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
-    clonal_ranking = c(colnames(method_overruled)[!method_overruled[1,]], colnames(method_overruled)[method_overruled[1,]])
+    clonal_ranking = c(colnames(method_overruled)[method_overruled==FALSE], colnames(method_overruled)[method_overruled==TRUE])
   }
-  print("AFTER")
-  print(clonal_ranking)
   
   frac_agreement_rounded = calc_method_agreement(all_data_rounded, segments, consensus_profile, "clonal")
   rounded_ranking = sort(unlist(frac_agreement_rounded), decreasing=T)
   if (all(frac_agreement_clonal==0)) {
     # If there is no agreement, i.e. no best method, make sure the NOT overruled methods are ranked highest
-    rounded_ranking = c(colnames(method_overruled)[!method_overruled[1,]], colnames(method_overruled)[method_overruled[1,]])
+    rounded_ranking = c(colnames(method_overruled)[method_overruled==FALSE], colnames(method_overruled)[method_overruled==TRUE])
   }
-  
-
-  
-  # TODO: Add step to weed out cases that are ploidy uncertain (level g/star 0) and ploidy certain (level f/star 1)
   
   #####################################################################
   # Create the consensus using the method that is most often agreeing with the consensus so far
@@ -873,6 +866,19 @@ if (file.exists(breakpoints_file)) {
   print("Filling in remaining segments with best method...")
   consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male)
   
+  #####################################################################
+  # Mark ploidy unknown samples
+  #####################################################################
+  # If this sample is marked as unknown, we overrule all the segment levels and stars and assign level g to make it stand out
+  marked_unknown = readr::read_tsv(marked_unknown_file, col_names=F)
+  if (samplename %in% marked_unknown[[1]]) {
+    consensus_profile$star = 1
+    consensus_profile$level = "g"
+  }
+  
+  #####################################################################
+  # Cleanup and write profile
+  #####################################################################
   # Pad empty entries if there are no calls for the last segment(s). This can occur for the Y chromosome
   if (nrow(consensus_profile) < nrow(segments)) {
     print(paste0("Diff before: ", nrow(consensus_profile), " ", nrow(segments)))
