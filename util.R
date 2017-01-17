@@ -603,6 +603,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       }
       cn_states = cn_segments[queryHits(overlap),]
       
+      print(cn_states)
       # Cleanup potential double clonal calls
       if (sum(cn_states$ccf==1) > 1) {
         clonal = cn_states[cn_states$ccf==1,]
@@ -610,6 +611,10 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
         seg_max = which.max(seg_size)
         cn_states = cn_states[cn_states$ccf!=1,]
         cn_states = rbind(cn_states, clonal[seg_max,])
+        
+        if (nrow(cn_states)==1) {
+          status = "clonal"
+        }
       }
       cn_states = list(cn_states)
       
