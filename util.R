@@ -245,7 +245,7 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
       dat = remove_chr21_artifact(dat)
       
     } else {
-      # Annotations don't need any adustments
+      # Annotations don't need any adustments - but broad does report segments twice
       chrpos = paste(dat$chromosome, dat$start, sep="_")
       dat = dat[!duplicated(chrpos),]
     }
