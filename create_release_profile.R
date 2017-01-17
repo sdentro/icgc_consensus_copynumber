@@ -82,7 +82,7 @@ make_anno_complete = function(anno, dat, map, num_segments, methodname) {
 
 reset_overruled_annotations = function(anno, overrulings_pivot, methodid) {
   if (nrow(overrulings_pivot) > 0) {
-    if (!is.na(overrulings_pivot[1, methodid])) {
+    if (overrulings_pivot[1, methodid]) {
       anno[1:nrow(anno), 1:ncol(anno)] = NA
     }
   }
@@ -105,7 +105,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   }
   
   if (!is.na(all_annotations$map_broad)) {
-    if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+    if (all(unlist(lapply(all_annotations$map_broad$cn_states, function(x) nrow(x[[1]]))) == 1, na.rm=T)) {
       anno_broad = do.call(rbind, padd_empty_entries(all_annotations$map_broad, "ABSOLUTE"))
       colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
     } else {
@@ -199,6 +199,10 @@ samplename = args[1]
 outdir = args[2]
 sex = args[3]
 
+# samplename = "005e85a3-3571-462d-8dc9-2babfc7ace21"
+# outdir = "output/"
+# sex = "male"
+
 current_date = gsub("-", "", Sys.Date())
 
 cons_profile_file = file.path("output/consensus_profile", paste0(samplename, "_consensus_profile.txt"))
@@ -213,14 +217,14 @@ purity_and_ploidy_overrulings_file = file.path("icgc_purity_and_ploidy_overrulin
 summ_stats = readr::read_tsv("output/summary_stats.txt")
 # purity_overrulings = readr::read_tsv(purity_overrulings_file)
 purity_and_ploidy_overrulings = readr::read_tsv(purity_and_ploidy_overrulings_file)
-summ_stats = subset(summ_stats, summ_stats$samplename==samplename)
+summ_stats = summ_stats[summ_stats$samplename==samplename,]
 # purity_overrulings = purity_overrulings[purity_overrulings$samplename==samplename,]
 purity_and_ploidy_overrulings = purity_and_ploidy_overrulings[purity_and_ploidy_overrulings$samplename==samplename,]
 
 # Assemble overrulings into a single data frame
 overrulings = summ_stats[1,grepl("exclude", colnames(summ_stats))]
 colnames(overrulings) = stringr::str_replace(colnames(overrulings), "exclude_", "")
-overrulings_pivot = overrulings & purity_and_ploidy_overrulings[colnames(overrulings)]
+overrulings_pivot = overrulings | purity_and_ploidy_overrulings[colnames(overrulings)]
 
 
 if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
@@ -256,15 +260,15 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
                            broad=broad_purityfile,
                            jabba=jabba_purityfile)
   
-  dat = na.omit(dat)
+  # dat = na.omit(dat)
   dat$total_cn = dat$major_cn+dat$minor_cn
   dat = dat[, c("chromosome", "start", "end", "total_cn", "major_cn", "minor_cn", "star", "level")]
   
   # Map the annotations against the loaded consensus profile
-  all_annotations = parse_all_profiles(samplename, 
-                                       dat, 
-                                       method_segmentsfile, 
-                                       method_purityfile, 
+  all_annotations = parse_all_profiles(samplename=samplename, 
+                                       segments=dat, 
+                                       method_segmentsfile=method_segmentsfile, 
+                                       method_purityfile=method_purityfile, 
                                        method_baflogr=NULL, 
                                        sex=sex,
                                        mustonen_has_header=F)  
