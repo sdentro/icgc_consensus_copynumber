@@ -3,6 +3,8 @@
 #' * Strip the unneeded columns from the interim consensus profiles to create the PCAWG-wide release of clonal copy number
 #' * Annotate the interim consensus profiles to create the PCAWG-11 release with subclonal calls from every method annotated
 #' 
+#' It needs a combined purity and overrulings table as input, created from the summary stats files
+#' 
 
 get_entry_template = function(map, methodname) {
   
@@ -145,6 +147,21 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
   }
   
+  if (!is.na(all_annotations$map_jabba)) {
+    if (all(unlist(lapply(all_annotations$map_jabba$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+      anno_jabba = do.call(rbind, padd_empty_entries(all_annotations$map_jabba, "JaBbA"))
+      anno_jabba$ccf = 1
+      colnames(anno_jabba) = paste0("jabba_", colnames(anno_jabba))
+    } else {
+      print("Found too many annotations for some segments from JaBbA")
+    }
+    anno_jabba = make_anno_complete(anno_jabba, dat, all_annotations$map_jabba, num_segments, "jabba")
+  } else {
+    anno_jabba = data.frame(matrix(NA, num_segments, 6))
+    colnames(anno_jabba) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn")
+    colnames(anno_jabba) = paste0("jabba_", colnames(anno_jabba))
+  }
+  
   if (!is.na(all_annotations$map_peifer)) {
     if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
@@ -168,8 +185,9 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
   anno_vanloowedge = reset_overruled_annotations(anno_vanloowedge, overrulings_pivot, "vanloowedge")
   anno_mustonen = reset_overruled_annotations(anno_mustonen, overrulings_pivot, "mustonen")
   anno_peifer = reset_overruled_annotations(anno_peifer, overrulings_pivot, "peifer")
+  anno_jabba = reset_overruled_annotations(anno_jabba, overrulings_pivot, "jabba")
   
-  return(data.frame(anno_broad, anno_dkfz, anno_vanloowedge, anno_mustonen, anno_peifer))
+  return(data.frame(anno_broad, anno_dkfz, anno_vanloowedge, anno_mustonen, anno_peifer, anno_jabba))
 }
 
 
@@ -184,8 +202,25 @@ current_date = gsub("-", "", Sys.Date())
 
 cons_profile_file = file.path("output/consensus_profile", paste0(samplename, "_consensus_profile.txt"))
 breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
-overrulings_pivot = as.data.frame(readr::read_tsv("manual_review_overrulings_pivot_table.txt"))
-overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
+summary_stats_file = file.path("summary_stats.txt")
+purity_overrulings_file = file.path("icgc_purity_overrulings.txt")
+purity_and_ploidy_overrulings_file = file.path("icgc_purity_and_ploidy_overrulings.txt")
+
+# overrulings_pivot = as.data.frame(readr::read_tsv("manual_review_overrulings_pivot_table.txt"))
+# overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
+
+summ_stats = readr::read_tsv("output/summary_stats.txt")
+# purity_overrulings = readr::read_tsv(purity_overrulings_file)
+purity_and_ploidy_overrulings = readr::read_tsv(purity_and_ploidy_overrulings_file)
+summ_stats = subset(summ_stats, summ_stats$samplename==samplename)
+# purity_overrulings = purity_overrulings[purity_overrulings$samplename==samplename,]
+purity_and_ploidy_overrulings = purity_and_ploidy_overrulings[purity_and_ploidy_overrulings$samplename==samplename,]
+
+# Assemble overrulings into a single data frame
+overrulings = summ_stats[1,grepl("exclude", colnames(summ_stats))]
+colnames(overrulings) = stringr::str_replace(colnames(overrulings), "exclude_", "")
+overrulings_pivot = overrulings & purity_and_ploidy_overrulings[colnames(overrulings)]
+
 
 if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   print("Reading in and mapping data...")
@@ -203,18 +238,22 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   mustonen_purityfile = "purity_ploidy_mustonen.txt"
   broad_segmentsfile = paste0("broad_annotations/", samplename, "_annotations.txt")
   broad_purityfile = "purity_ploidy_broad.txt"
+  jabba_segmentsfile = paste0("jabba_annotations/", samplename, "_annotations.txt")
+  jabba_purityfile = "purity_ploidy_jabba.txt"
   
   method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                              vanloowedge=vanloowedge_segmentsfile,
                              peifer=peifer_segmentsfile,
                              mustonen=mustonen_segmentsfile,
-                             broad=broad_segmentsfile)
+                             broad=broad_segmentsfile,
+                             jabba=jabba_segmentsfile)
   
   method_purityfile = list(dkfz=dkfz_purityfile,
                            vanloowedge=vanloowedge_purityfile,
                            peifer=peifer_purityfile,
                            mustonen=mustonen_purityfile,
-                           broad=broad_purityfile)
+                           broad=broad_purityfile,
+                           jabba=jabba_purityfile)
   
   dat = na.omit(dat)
   dat$total_cn = dat$major_cn+dat$minor_cn
