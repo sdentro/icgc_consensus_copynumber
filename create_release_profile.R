@@ -28,10 +28,16 @@ padd_empty_entries = function(map, methodname) {
   
   cn_states = list()
   for (i in 1:length(map$cn_states)) {
-    if (is.null(map$cn_states[[i]])) {
+    if (is.null(map$cn_states[[i]]) | is.na(map$cn_states[[i]])) {
       cn_states[[i]] = template
     } else {
-      cn_states[[i]] = map$cn_states[[i]][[1]]
+      if (methodname=="Sclust" & nrow(map$cn_states[[i]][[1]])==1) {
+        cn_states[[i]] = map$cn_states[[i]][[1]]
+      } else if (methodname=="Sclust") {
+        cn_states[[i]] = template
+      } else {
+        cn_states[[i]] = map$cn_states[[i]][[1]]
+      }
     }
   }
   return(cn_states)
@@ -163,16 +169,18 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_jabba) = paste0("jabba_", colnames(anno_jabba))
   }
   
+  # Sclust setup adapted. The padd_empty_entries function removes any problematic mappings
+  # This is due to the segmentation of Sclust being far too lenient in positions
   if (!is.na(all_annotations$map_peifer)) {
-    if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
+    #if (all(unlist(lapply(all_annotations$map_peifer$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_peifer = do.call(rbind, padd_empty_entries(all_annotations$map_peifer, "Sclust"))
       colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
-    } else {
-      print("Found too many annotations for some segments from Sclust")
+    #} else {
+    #  print("Found too many annotations for some segments from Sclust")
       # anno_peifer = data.frame(matrix(NA, num_segments, 9))
       # colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
       # colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
-    }
+    #}
     anno_peifer = make_anno_complete(anno_peifer, dat, all_annotations$map_peifer, num_segments, "sclust")
   } else {
     anno_peifer = data.frame(matrix(NA, num_segments, 9))
@@ -217,7 +225,7 @@ purity_and_ploidy_overrulings_file = file.path("icgc_purity_and_ploidy_overrulin
 # overrulings_pivot = as.data.frame(readr::read_tsv("manual_review_overrulings_pivot_table.txt"))
 # overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
 
-summ_stats = readr::read_tsv("output/summary_stats.txt")
+summ_stats = readr::read_tsv(summary_stats_file)
 # purity_overrulings = readr::read_tsv(purity_overrulings_file)
 purity_and_ploidy_overrulings = readr::read_tsv(purity_and_ploidy_overrulings_file)
 summ_stats = summ_stats[summ_stats$samplename==samplename,]
