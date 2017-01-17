@@ -737,7 +737,7 @@ if (file.exists(breakpoints_file)) {
   }
   
   # Remove those that are overruled
-  if (any(overruled)) {
+  if (any(as.logical(method_overruled))) {
     for (method in names(method_overruled)[as.logical(method_overruled)]) {
       all_data_clonal[grepl(method, names(all_data_clonal))] = NA
     }
