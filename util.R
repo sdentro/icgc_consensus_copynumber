@@ -41,6 +41,8 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     
     purity = parse_dkfz_purity(purityfile, samplename)
     dat$ccf = dat$cellular_prevalence / (purity+0.000000000000001)
+    # Segments without CP are set to 1 CCF
+    dat$ccf[is.na(dat$cellular_prevalence)] = 1
     
     # Check for X and Y in males as they don't have allele specific CN in the given files
     sel = (dat$chromosome==23 | dat$chromosome==24) & !is.na(dat$copy_number) & is.na(dat$major_cn) & is.na(dat$minor_cn)
