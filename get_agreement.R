@@ -290,7 +290,9 @@ get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1
         method_name = gsub("map_", "", names(all_maps_1)[j])
         if (method_name %in% names(combined_status)[methods_with_result]) {
           seg = map$cn_states[[i]][[1]]
-          inventory_1 = rbind(inventory_1, data.frame(method=gsub("map_", "", names(all_maps_1)[j]), major_cn=seg$major_cn, minor_cn=seg$minor_cn))
+          if (!is.na(seg)) {
+            inventory_1 = rbind(inventory_1, data.frame(method=gsub("map_", "", names(all_maps_1)[j]), major_cn=seg$major_cn, minor_cn=seg$minor_cn))
+          }
         }
       }
     }
