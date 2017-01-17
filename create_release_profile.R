@@ -197,6 +197,7 @@ source("~/repo/icgc_consensus_copynumber_final/util.R")
 args = commandArgs(T)
 samplename = args[1]
 outdir = args[2]
+sex = args[3]
 
 current_date = gsub("-", "", Sys.Date())
 
