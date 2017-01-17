@@ -40,7 +40,7 @@ parse_dkfz = function(segmentsfile, purityfile, samplename, dkfz_subclonality_cu
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     
     purity = parse_dkfz_purity(purityfile, samplename)
-    dat$ccf = dat$cellular_prevalence / purity
+    dat$ccf = dat$cellular_prevalence / (purity+0.000000000000001)
     
     # Check for X and Y in males as they don't have allele specific CN in the given files
     sel = (dat$chromosome==23 | dat$chromosome==24) & !is.na(dat$copy_number) & is.na(dat$major_cn) & is.na(dat$minor_cn)
@@ -111,7 +111,7 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename, sex) {
       dat$ccf = dat$clonal_frequency / purity
       colnames(dat)[7] = "cellular_prevalence"
     } else if ("cellular_prevalence" %in% colnames(dat)) {
-      dat$ccf = dat$cellular_prevalence / purity
+      dat$ccf = dat$cellular_prevalence / (purity+0.000000000000001)
       colnames(dat)[7] = "cellular_prevalence"
     } else {
       # Annotations don't need any adjustments
@@ -153,7 +153,7 @@ parse_peifer = function(segmentsfile, purityfile, samplename) {
       purity = parse_peifer_purity(purityfile, samplename)
       # What should be CP is encoded as CCF
       dat$ccf = dat$cellular_prevalence
-      dat$cellular_prevalence = dat$ccf * purity
+      dat$cellular_prevalence = dat$ccf * (purity+0.000000000000001)
       
     } else {
       # Annotations don't need any adjustments
@@ -191,7 +191,7 @@ parse_mustonen = function(segmentsfile, purityfile, samplename, has_header=F) {
       dat$end = dat$end - 1
     }
     purity = parse_mustonen_purity(purityfile, samplename)
-    dat$ccf = dat$cellular_prevalence / purity
+    dat$ccf = 1 #dat$cellular_prevalence / purity
     
     # Apply a few filters to get rid of artifacts
     dat = dat[!(dat$start==dat$end),]
