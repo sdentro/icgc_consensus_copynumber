@@ -262,7 +262,7 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   
   # dat = na.omit(dat)
   dat$total_cn = dat$major_cn+dat$minor_cn
-  dat = dat[, c("chromosome", "start", "end", "total_cn", "major_cn", "minor_cn", "star", "level")]
+  dat = dat[, c("chromosome", "start", "end", "total_cn", "major_cn", "minor_cn", "star", "level", "methods_agree")]
   
   # Map the annotations against the loaded consensus profile
   all_annotations = parse_all_profiles(samplename=samplename, 
