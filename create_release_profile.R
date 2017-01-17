@@ -192,7 +192,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
 
 
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
-source("~/repo/icgc_consensus_copynumber/util.R")
+source("~/repo/icgc_consensus_copynumber_final/util.R")
 
 args = commandArgs(T)
 samplename = args[1]
@@ -260,7 +260,12 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   dat = dat[, c("chromosome", "start", "end", "total_cn", "major_cn", "minor_cn", "star", "level")]
   
   # Map the annotations against the loaded consensus profile
-  all_annotations = parse_all_profiles(samplename, dat, method_segmentsfile, method_purityfile, method_baflogr=NULL, mustonen_has_header=F, round_dkfz=F)  
+  all_annotations = parse_all_profiles(samplename, 
+                                       dat, 
+                                       method_segmentsfile, 
+                                       method_purityfile, 
+                                       method_baflogr=NULL, 
+                                       mustonen_has_header=F)  
   combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot, nrow(dat))
   
   # PCAWG11 profile with full annotations
