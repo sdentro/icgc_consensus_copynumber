@@ -888,6 +888,7 @@ get_combined_status = function(segments, map_vanloowedge, map_dkfz, map_mustonen
 }
 
 calc_ploidy = function(subclones) {
+  subclones = subclones[!is.na(subclones$nMaj1_A) & !is.na(subclones$nMin1_A),]
   subclones$length = round((subclones$endpos-subclones$startpos)/1000)
   cn_state_one = (subclones$nMaj1_A+subclones$nMin1_A)*subclones$frac1_A
   cn_state_two = ifelse(!is.na(subclones$frac2_A), (subclones$nMaj2_A+subclones$nMin2_A)*subclones$frac2_A, 0)

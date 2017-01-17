@@ -275,6 +275,255 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, allowe
   return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, num_methods_agree=num_methods, cn_states=cn_states))
 }
 
+
+#' @param min_methods_agree The minimum number of methods that is required to agree
+#' @param min_methods_with_call_on_segment The minimum number of methods with a call for a segment to be considered for agreement
+#' @param method_overruled A data frame with a single row and a column per method. Each cell contains TRUE if the method is to be overruled
+get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1, all_data_2, all_data_3, segments, do_majority_vote=FALSE, min_methods_agree=0, min_methods_agree_x=0, min_methods_agree_y=0, min_methods_with_call_on_segment=2, min_methods_with_call_on_segment_x=2, min_methods_with_call_on_segment_y=2, method_overruled=NA, allowed_methods_x_female=c("dkfz", "mustonen", "vanloowedge", "jabba", "broad"), allowed_methods_x_male=c("dkfz", "mustonen", "jabba", "broad"), allowed_methods_y=c("dkfz", "jabba")) {
+  
+  get_all_states = function(all_maps_1, methods_with_result) {
+    inventory_1 = data.frame()
+    for (j in 1:length(all_maps_1)) {
+      map = all_maps_1[[j]]
+      
+      if (!is.na(map) && length(map$cn_states) >= i && !is.null(map$cn_states[[i]])) {
+        method_name = gsub("map_", "", names(all_maps_1)[j])
+        if (method_name %in% names(combined_status)[methods_with_result]) {
+          seg = map$cn_states[[i]][[1]]
+          inventory_1 = rbind(inventory_1, data.frame(method=gsub("map_", "", names(all_maps_1)[j]), major_cn=seg$major_cn, minor_cn=seg$minor_cn))
+        }
+      }
+    }
+    return(inventory_1)
+  }
+  
+  
+  greedy_get_allele = function(inventory_1, inventory_2, min_methods_agree, min_methods_with_call_on_segment, do_majority_vote) {
+    # Greedy algorithm to find the single most prevalent state and make that into a copy number call
+    allele_inventory = table(c(inventory_1$major_cn, inventory_1$minor_cn, inventory_2$major_cn[! inventory_2$method %in% clonal_votes], inventory_2$minor_cn[! inventory_2$method %in% clonal_votes]))
+    
+    num_methods = length(inventory_1$method)
+    hits_inventory = data.frame(allele=as.numeric(names(allele_inventory)))
+    scoring = as.data.frame(matrix(0, nrow=length(allele_inventory), ncol=num_methods))
+    colnames(scoring) = inventory_1$method
+    hits_inventory = data.frame(hits_inventory, scoring)
+    for (j in 1:length(allele_inventory)) {
+      allele = hits_inventory$allele[j]
+      for (method in inventory_1$method) {
+        
+        inv_1_method = inventory_1[inventory_1$method==method,]
+        inv_2_method = inventory_2[inventory_2$method==method,]
+        cn_state_1 = inv_1_method$major_cn==allele | inv_1_method$minor_cn==allele
+        cn_state_2 = inv_2_method$major_cn[!method %in% clonal_votes]==allele | inv_2_method$minor_cn[!method %in% clonal_votes]==allele
+        
+        if (method %in% clonal_votes) {
+          hits_inventory[j, method] = as.numeric(cn_state_1)
+        } else {
+          hits_inventory[j, method] = as.numeric(cn_state_1 | cn_state_2)
+        }
+      }
+    }
+    
+    # Get the qualified hits (i.e. supported by more than 50% of the methods) and take the best one
+    num_hits = rowSums(hits_inventory[,-1])
+    # There are two options: By passing the minimum number of methods or by majority vote with a minimum number of methods reporting
+    if (!do_majority_vote) {
+      qualified_hits = num_hits > min_methods_agree
+    } else {
+      qualified_hits = num_hits > ceiling(num_methods*0.5) & num_methods > min_methods_with_call_on_segment
+    }
+    
+    if (!any(qualified_hits)) {
+      best_hit = NA
+    } else {
+      best_hit = max(num_hits[qualified_hits])
+    }
+    
+    if (!is.na(best_hit) && sum(num_hits==best_hit)==1) {
+      # One result, save that as allele 1 and now look for 2
+      allele_1 = hits_inventory[which(num_hits==best_hit), 1]
+      
+      # We have one state shared by all methods, fix this and find the other
+      inv_1_hit = inventory_1[inventory_1$major_cn==allele_1 | inventory_1$minor_cn==allele_1,]
+      inv_2_hit = inventory_2[(inventory_2$major_cn==allele_1 | inventory_2$minor_cn==allele_1) & !inventory_2$method %in% clonal_votes,]
+      
+      other_allele_options = c()
+      if (nrow(inv_1_hit) > 0) {
+        for (j in 1:nrow(inv_1_hit)) {
+          if (inv_1_hit$major_cn[j]==allele_1) {
+            other_allele_options = c(other_allele_options, inv_1_hit$minor_cn[j])
+          } else {
+            other_allele_options = c(other_allele_options, inv_1_hit$major_cn[j])
+          }
+        }
+      }
+      
+      if (nrow(inv_2_hit) > 0) {
+        for (j in 1:nrow(inv_2_hit)) {
+          if (inv_2_hit$major_cn[j]==allele_1) {
+            other_allele_options = c(other_allele_options, inv_2_hit$minor_cn[j])
+          } else {
+            other_allele_options = c(other_allele_options, inv_2_hit$major_cn[j])
+          }
+        }
+      }
+      
+      other_allele_options = table(other_allele_options)
+      best_hit_other = which.max(other_allele_options)
+      if (sum(other_allele_options==other_allele_options[best_hit_other])==1) {
+        allele_2 = other_allele_options[best_hit_other]
+      } else {
+        allele_2 = NA
+      }
+      
+    } else {
+      # There is no single best allele 1
+      allele_1 = NA
+      allele_2 = NA
+    }
+    return(list(allele_1=allele_1, allele_2=allele_2))
+  }
+  
+  
+  
+  
+  # breakpoints = read.table(paste0(samplename, "_consensus_breakpoints.txt"), header=T, stringsAsFactors=F)
+  # segments = breakpoints2segments(breakpoints)
+  
+  # res = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, mustonen_has_header=mustonen_has_header)
+  map_dkfz_1 = all_data_1$map_dkfz
+  map_mustonen_1 = all_data_1$map_mustonen
+  map_peifer_1 = all_data_1$map_peifer
+  map_vanloowedge_1 = all_data_1$map_vanloowedge
+  map_broad_1 = all_data_1$map_broad
+  map_jabba_1 = all_data_1$map_jabba
+  all_maps_1 = list(map_broad=map_broad_1, map_dkfz=map_dkfz_1, map_mustonen=map_mustonen_1, map_vanloowedge=map_vanloowedge_1, map_peifer=map_peifer_1, map_jabba=map_jabba_1)
+  
+  map_dkfz_2 = all_data_2$map_dkfz
+  map_mustonen_2 = all_data_2$map_mustonen
+  map_peifer_2 = all_data_2$map_peifer
+  map_vanloowedge_2 = all_data_2$map_vanloowedge
+  map_broad_2 = all_data_2$map_broad
+  map_jabba_2 = all_data_2$map_jabba
+  all_maps_2 = list(map_broad=map_broad_2, map_dkfz=map_dkfz_2, map_mustonen=map_mustonen_2, map_vanloowedge=map_vanloowedge_2, map_peifer=map_peifer_2, map_jabba=map_jabba_2)
+
+  # Use the non-rounded data to build the status
+  combined_status = get_combined_status(segments, all_data_clonal$map_vanloowedge, all_data_clonal$map_dkfz, all_data_clonal$map_mustonen, all_data_clonal$map_peifer, all_data_clonal$map_broad, all_data_clonal$map_jabba)  
+  # Order both combined_status and method_overruled to have the same order - if method_overruled is supplied
+  if (!is.na(method_overruled)) {
+    method_overruled = method_overruled[colnames(combined_status)[4:9]]
+  }
+  clonal_votes = colnames(combined_status)[which(combined_status[i,] == "clonal")]
+  
+  agree = rep(F, nrow(segments))
+  cn_states = list()
+  num_methods = rep(0, nrow(segments))
+  one_allele_saved = rep(NA, nrow(segments))
+  for (i in 1:nrow(segments)) {
+    
+    ###########################################
+    # Do different things when addressing X and Y because there are fewer methods reporting
+    ###########################################
+    # Order of methods is: dkfz, mustonen, peifer, vanloowedge, broad, jabba
+    if (segments$chromosome[i]=="X") {
+      if (sex=="female") { allowed_methods_x = allowed_methods_x_female
+      } else { allowed_methods_x = allowed_methods_x_male }
+      selection = !is.na(combined_status[i,4:9]) & colnames(combined_status)[4:9] %in% allowed_methods_x
+      # These can be overwritten because X and Y are always the last chromosomes to be considered
+      min_methods_with_call_on_segment = min_methods_with_call_on_segment_x
+      min_methods_agree = min_methods_agree_x
+      
+    } else if (segments$chromosome[i]=="Y") {
+      selection = !is.na(combined_status[i,4:9]) & colnames(combined_status)[4:9] %in% allowed_methods_y
+      # These can be overwritten because X and Y are always the last chromosomes to be considered
+      min_methods_with_call_on_segment = min_methods_with_call_on_segment_y
+      min_methods_agree = min_methods_agree_y
+      
+    } else {
+      selection = !is.na(combined_status[i,4:9])
+    }
+    
+    # Check if method overruling is requested
+    if (!is.na(method_overruled)) {
+      selection = selection & !method_overruled
+    }
+    # Finally select the indices that correspond the methods with results
+    methods_with_result = (4:9)[selection]
+    
+    #' If all methods think it's clonal there is no rounded majority vote
+    if (length(methods_with_result)==0 || all(combined_status[i,methods_with_result]=="clonal", na.rm=T)) {
+      cn_states[[i]] = NA
+      next
+    }
+    
+    ###########################################
+    # Fetch all the CN states for this segment
+    ###########################################    
+    inventory_1 = get_all_states(all_maps_1, methods_with_result)
+    inventory_2 = get_all_states(all_maps_2, methods_with_result)
+    
+    ###########################################
+    # Perform the voting - option 1
+    ###########################################    
+    major_configs = paste(inventory_1$major_cn[! inventory_1$method %in% clonal_votes], inventory_1$minor_cn[! inventory_1$method %in% clonal_votes], sep="_")
+    minor_configs = paste(inventory_2$major_cn[! inventory_2$method %in% clonal_votes], inventory_2$minor_cn[! inventory_2$method %in% clonal_votes], sep="_")
+    clonal_configs = paste(inventory_1$major_cn[inventory_1$method %in% clonal_votes], inventory_1$minor_cn[inventory_1$method %in% clonal_votes], sep="_")
+    votes = table(c(major_configs, minor_configs, clonal_configs))
+    best_vote = max(votes)
+    if (!do_majority_vote & best_vote < min_methods_agree) {
+      # Did not meet threshold for enough methods agree
+      best_vote = NA
+    } else if (do_majority_vote & nrow(inventory_1) < min_methods_with_call_on_segment) {
+      # Not enough methods reporting for a reliable majority vote
+      best_vote = NA
+    }
+    
+    if (sum(votes==best_vote, na.rm=T) == 1) {    
+      # We've found a majority vote, save it and done
+      maj = as.numeric(unlist(stringr::str_split(names(votes)[votes==best_vote], "_"))[1])
+      min = as.numeric(unlist(stringr::str_split(names(votes)[votes==best_vote], "_"))[2])
+      agree[i] = T
+      combination_method = "vote_combined_states"
+      
+    } else {
+      ###########################################
+      # A tie - Perform the voting - option 2
+      ###########################################    
+      res = greedy_get_allele(inventory_1, inventory_2, min_methods_agree, min_methods_with_call_on_segment, do_majority_vote)
+      
+      # If both alleles are now defined we have consensus
+      if (!is.na(res$allele_1) & !is.na(res$allele_2)) {
+        agree[i] = T
+        maj = max(c(res$allele_1, res$allele_2))
+        min = min(c(res$allele_1, res$allele_2))
+        combination_method = "vote_single_state"
+      } else if (!is.na(res$allele_1)) {
+        one_allele_saved[i] = res$allele_1
+      }
+    }
+    
+    
+    if (agree[i]) {
+      new_state = inventory_1[1,c("method", "major_cn", "minor_cn"), drop=F]
+      new_state$method = combination_method
+      new_state$major_cn = maj
+      new_state$minor_cn = min
+      new_state$num_methods_agree = sum((inventory_1$major_cn==maj & inventory_1$minor_cn==min) | (inventory_2$major_cn==maj & inventory_2$minor_cn==min))
+      
+      
+      num_methods[i] = new_state$num_methods_agree
+      cn_states[[i]] = new_state
+    } else {
+      cn_states[[i]] = NA
+    }
+  }  
+  
+  segments$size = segments$end - segments$start
+  frac_genome_agree = round(sum(segments$size[agree]/1000) / sum(segments$size/1000), 2)
+  
+  return(list(frac_agree=data.frame(samplename=samplename, frac_genome_agree=frac_genome_agree), segments=segments, agree=agree, cn_states=cn_states, num_methods_agree=num_methods, one_allele_saved=one_allele_saved))
+}
+
 test_purities = function(purities, consensus_profile) {
   
   # rBacktransform = function(rho, nA, nB, psi) {
@@ -343,7 +592,7 @@ sex = args[3]
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing")
-# samplename = "f393bb0c-4178-ca4a-e040-11ac0d48455f"
+# samplename = "005e85a3-3571-462d-8dc9-2babfc7ace21"
 # sex = "female"
 # outdir = "output"
 
@@ -356,6 +605,7 @@ breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
 # expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz" # Removed after ploidy has been reinferred after fixes
 expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
 marked_unknown_file = "icgc_marked_uknown.lst"
+purity_based_overrulings_file = "icgc_purity_and_ploidy_overrulings.txt"
 # the reference ploidy is multiplied by this factor to determine how much of a deviation is tolerated
 max_expected_ploidy_diff_factor = 0.25
 allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba", "broad")
@@ -413,6 +663,9 @@ if (file.exists(breakpoints_file)) {
   
   all_data_clonal = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr, sex=sex, mustonen_has_header=F, num_threads=num_threads)
   
+  #####################################################################
+  # Overrule methods
+  #####################################################################
   # Calc ploidy of all profiles and overrule those that are not concordant
   ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
   ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T)
@@ -421,34 +674,6 @@ if (file.exists(breakpoints_file)) {
   ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
   ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba)
   
-  print("Getting clonal agreement...")
-  agreement_clonal = get_frac_genome_agree(samplename, 
-                                           all_data_clonal, 
-                                           segments, 
-                                           min_methods_agree=6, 
-                                           min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male),  length(allowed_methods_x_female)),
-                                           min_methods_agree_y=length(allowed_methods_y), 
-                                           allowed_methods_x_female=allowed_methods_x_female, 
-                                           allowed_methods_x_male=allowed_methods_x_male, 
-                                           allowed_methods_y=allowed_methods_y)
-  
-  #####################################################################
-  # Agreement exclude 1
-  #####################################################################
-  print("Getting exclude 1 agreement...")
-  agreement_clonal_exclude_1 = get_frac_genome_agree(samplename, 
-                                                     all_data_clonal, 
-                                                     segments, 
-                                                     min_methods_agree=5, 
-                                                     min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male)-1,  length(allowed_methods_x_female)-1),
-                                                     min_methods_agree_y=length(allowed_methods_y), 
-                                                     allowed_methods_x_female=allowed_methods_x_female, 
-                                                     allowed_methods_x_male=allowed_methods_x_male, 
-                                                     allowed_methods_y=allowed_methods_y)
-  
-  #####################################################################
-  # Agreement after excluding overruled profiles
-  #####################################################################
   expected_ploidy = read.table(expected_ploidy_file, header=T, stringsAsFactors=F)
   expected_ploidy = expected_ploidy[expected_ploidy$samplename==samplename, "ploidy"]
   max_expected_ploidy_diff = expected_ploidy*max_expected_ploidy_diff_factor
@@ -500,12 +725,55 @@ if (file.exists(breakpoints_file)) {
   method_overruled = data.frame(t(data.frame(unlist(overrulings))), stringsAsFactors=F)
   row.names(method_overruled) = NULL
   
+  # Add the purity based overrulings
+  purity_based_overrulings = readr::read_tsv(purity_based_overrulings_file)
+  purity_based_overrulings = purity_based_overrulings[purity_based_overrulings$samplename==samplename, names(method_overruled)]
+  method_overruled = data.frame(method_overruled | purity_based_overrulings)
+  
   if (all(as.logical(method_overruled[1,]))) {
     print("All methods overruled, quitting now")
     print(data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_jabba=ploidy_jabba$ploidy, reference=expected_ploidy))
     q(save="no")
   }
   
+  # Remove those that are overruled
+  if (any(overruled)) {
+    for (method in names(method_overruled)[as.logical(method_overruled)]) {
+      all_data_clonal[grepl(method, names(all_data_clonal))] = NA
+    }
+  }
+  
+  #####################################################################
+  # Clonal complete agreement
+  #####################################################################
+  print("Getting clonal agreement...")
+  agreement_clonal = get_frac_genome_agree(samplename, 
+                                           all_data_clonal, 
+                                           segments, 
+                                           min_methods_agree=6, 
+                                           min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male),  length(allowed_methods_x_female)),
+                                           min_methods_agree_y=length(allowed_methods_y), 
+                                           allowed_methods_x_female=allowed_methods_x_female, 
+                                           allowed_methods_x_male=allowed_methods_x_male, 
+                                           allowed_methods_y=allowed_methods_y)
+  
+  #####################################################################
+  # Agreement exclude 1
+  #####################################################################
+  print("Getting exclude 1 agreement...")
+  agreement_clonal_exclude_1 = get_frac_genome_agree(samplename, 
+                                                     all_data_clonal, 
+                                                     segments, 
+                                                     min_methods_agree=5, 
+                                                     min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male)-1,  length(allowed_methods_x_female)-1),
+                                                     min_methods_agree_y=length(allowed_methods_y), 
+                                                     allowed_methods_x_female=allowed_methods_x_female, 
+                                                     allowed_methods_x_male=allowed_methods_x_male, 
+                                                     allowed_methods_y=allowed_methods_y)
+  
+  #####################################################################
+  # Agreement after excluding overruled profiles
+  #####################################################################
   print("Getting exclude overruled agreement...")
   # Check that there is an entry and that there is at least one method overruled
   # In this case we exclude the overruled methods, and we accept if all others agree if there are a required
@@ -531,7 +799,7 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Agreement after rounding
   #####################################################################
-  print("Getting rounded agreement...")
+  print("Loading rounded...")
   dkfz_segmentsfile = file.path(outdir, "dkfz_rounded_clonal", paste0(samplename, "_segments.txt"))
   vanloowedge_segmentsfile = file.path(outdir, "vanloowedge_rounded_clonal", paste0(samplename, "_segments.txt"))
   peifer_segmentsfile = file.path(outdir, "peifer_rounded_clonal", paste0(samplename, "_segments.txt"))
@@ -539,21 +807,16 @@ if (file.exists(breakpoints_file)) {
   broad_segmentsfile = file.path(outdir, "broad_rounded_clonal", paste0(samplename, "_segments.txt"))
   jabba_segmentsfile = file.path(outdir, "jabba_rounded_clonal", paste0(samplename, "_segments.txt"))
   
-  method_segmentsfile = list(dkfz=ifelse(!overrulings$dkfz, dkfz_segmentsfile, NA),
-                             vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
-                             peifer=ifelse(!overrulings$peifer, peifer_segmentsfile, NA),
-                             mustonen=ifelse(!overrulings$mustonen, mustonen_segmentsfile, NA),
-                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA),
-                             jabba=ifelse(!overrulings$jabba, jabba_segmentsfile, NA))
+  method_segmentsfile = list(dkfz=ifelse(!method_overruled$dkfz, dkfz_segmentsfile, NA),
+                             vanloowedge=ifelse(!method_overruled$vanloowedge, vanloowedge_segmentsfile, NA),
+                             peifer=ifelse(!method_overruled$peifer, peifer_segmentsfile, NA),
+                             mustonen=ifelse(!method_overruled$mustonen, mustonen_segmentsfile, NA),
+                             broad=ifelse(!method_overruled$broad, broad_segmentsfile, NA),
+                             jabba=ifelse(!method_overruled$jabba, jabba_segmentsfile, NA))
   
   all_data_rounded = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
 
-  
-  #####################################################################
-  # Agreement after alternate rounding
-  #####################################################################
-  # Load previously generated alternate rounded profile and perform the mapping, the code below should consider this as well
-  print("Getting alt rounded agreement...")
+  print("Loading alt rounded...")
   dkfz_segmentsfile = file.path(outdir, "dkfz_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   vanloowedge_segmentsfile = file.path(outdir, "vanloowedge_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   peifer_segmentsfile = file.path(outdir, "peifer_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
@@ -561,50 +824,36 @@ if (file.exists(breakpoints_file)) {
   broad_segmentsfile = file.path(outdir, "broad_rounded_alt_clonal/", paste0(samplename, "_segments.txt"))
   jabba_segmentsfile = file.path(outdir, "jabba_rounded_alt_clonal", paste0(samplename, "_segments.txt"))
   
-  method_segmentsfile = list(dkfz=ifelse(!overrulings$dkfz, dkfz_segmentsfile, NA),
-                             vanloowedge=ifelse(!overrulings$vanloowedge, vanloowedge_segmentsfile, NA),
-                             peifer=ifelse(!overrulings$peifer, peifer_segmentsfile, NA),
-                             mustonen=ifelse(!overrulings$mustonen, mustonen_segmentsfile, NA),
-                             broad=ifelse(!overrulings$broad, broad_segmentsfile, NA),
-                             jabba=ifelse(!overrulings$jabba, jabba_segmentsfile, NA))
+  method_segmentsfile = list(dkfz=ifelse(!method_overruled$dkfz, dkfz_segmentsfile, NA),
+                             vanloowedge=ifelse(!method_overruled$vanloowedge, vanloowedge_segmentsfile, NA),
+                             peifer=ifelse(!method_overruled$peifer, peifer_segmentsfile, NA),
+                             mustonen=ifelse(!method_overruled$mustonen, mustonen_segmentsfile, NA),
+                             broad=ifelse(!method_overruled$broad, broad_segmentsfile, NA),
+                             jabba=ifelse(!method_overruled$jabba, jabba_segmentsfile, NA))
   
   all_data_rounded_alt = parse_all_profiles(samplename, segments, method_segmentsfile, method_purityfile, method_baflogr=NULL, sex=sex, mustonen_has_header=T, num_threads=num_threads)
   
-  # TODO:
-  # Write a function that takes all_data_rounded, all_data_rounded_alt and all_data_clonal and works out per segment:
-  #  * if all segments clonal -> store those
-  #  * if some segments subclonal -> find majority state and compare with clonal segments
-  #  * if no majority state -> check with clonal segments
-  #  * if not able to decide, take subclonal state with highest fraction
-  
-  
-  agreement_rounded = get_frac_genome_agree(samplename, 
-                                            all_data_rounded, 
-                                            segments, 
-                                            method_overruled=method_overruled, 
-                                            min_methods_agree=4, 
-                                            min_methods_agree_x=2, 
-                                            min_methods_agree_y=2, 
-                                            allowed_methods_x_female=allowed_methods_x_female, 
-                                            allowed_methods_x_male=allowed_methods_x_male, 
-                                            allowed_methods_y=allowed_methods_y)
-  agreement_rounded_alt = get_frac_genome_agree(samplename, 
-                                                all_data_rounded, 
-                                                segments, 
-                                                method_overruled=method_overruled, 
-                                                min_methods_agree=4, 
-                                                min_methods_agree_x=2, 
-                                                min_methods_agree_y=2, 
-                                                allowed_methods_x_female=allowed_methods_x_female, 
-                                                allowed_methods_x_male=allowed_methods_x_male, 
-                                                allowed_methods_y=allowed_methods_y)
+  print("Getting rounded agreement...")
+  agreement_rounded = get_frac_genome_agree_rounded(samplename, 
+                                                    all_data_clonal, 
+                                                    all_data_rounded, 
+                                                    all_data_rounded_alt, 
+                                                    NULL, 
+                                                    segments, 
+                                                    min_methods_agree=4, 
+                                                    min_methods_agree_x=2, 
+                                                    min_methods_agree_y=2, 
+                                                    method_overruled=method_overruled, 
+                                                    allowed_methods_x_female=allowed_methods_x_female, 
+                                                    allowed_methods_x_male=allowed_methods_x_male, 
+                                                    allowed_methods_y=allowed_methods_y)
   
   #####################################################################
   # Agreement with accepting majority vote
   #####################################################################
   print("Getting majority vote agreement...")
-  agreement_rounded_majority_vote = get_frac_genome_agree_maj_vote(samplename, 
-                                                                   all_data_rounded, 
+  agreement_clonal_majority_vote = get_frac_genome_agree_maj_vote(samplename, 
+                                                                   all_data_clonal, 
                                                                    segments, 
                                                                    method_overruled=method_overruled,
                                                                    min_methods_agree=4,
@@ -613,21 +862,50 @@ if (file.exists(breakpoints_file)) {
                                                                    allowed_methods_x_female=allowed_methods_x_female, 
                                                                    allowed_methods_x_male=allowed_methods_x_male, 
                                                                    allowed_methods_y=allowed_methods_y)
-  agreement_rounded_alt_majority_vote = get_frac_genome_agree_maj_vote(samplename, 
-                                                                       all_data_rounded_alt, 
-                                                                       segments, 
-                                                                       method_overruled=method_overruled,
-                                                                       min_methods_agree=4,
-                                                                       min_methods_agree_x=2, 
-                                                                       min_methods_agree_y=2, 
-                                                                       allowed_methods_x_female=allowed_methods_x_female, 
-                                                                       allowed_methods_x_male=allowed_methods_x_male, 
-                                                                       allowed_methods_y=allowed_methods_y)
+  
+  agreement_rounded_majority_vote = get_frac_genome_agree_rounded(samplename, 
+                                                                all_data_clonal, 
+                                                                all_data_rounded, 
+                                                                all_data_rounded_alt, 
+                                                                NULL, 
+                                                                segments, 
+                                                                method_overruled=method_overruled, 
+                                                                allowed_methods_x_female=allowed_methods_x_female, 
+                                                                allowed_methods_x_male=allowed_methods_x_male, 
+                                                                allowed_methods_y=allowed_methods_y,
+                                                                do_majority_vote=TRUE)
+  
+  #####################################################################
+  # Minority agreement - better than a single method
+  #####################################################################
+  # agreement_clonal_minority = get_frac_genome_agree(samplename, 
+  #                                          all_data_clonal, 
+  #                                          segments, 
+  #                                          min_methods_agree=2, 
+  #                                          min_methods_agree_x=ifelse(sex=="male", length(allowed_methods_x_male),  length(allowed_methods_x_female)),
+  #                                          min_methods_agree_y=length(allowed_methods_y), 
+  #                                          allowed_methods_x_female=allowed_methods_x_female, 
+  #                                          allowed_methods_x_male=allowed_methods_x_male, 
+  #                                          allowed_methods_y=allowed_methods_y)
+  # 
+  # agreement_rounded_minority = get_frac_genome_agree_rounded(samplename, 
+  #                                                   all_data_clonal, 
+  #                                                   all_data_rounded, 
+  #                                                   all_data_rounded_alt, 
+  #                                                   NULL, 
+  #                                                   segments, 
+  #                                                   min_methods_agree=2, 
+  #                                                   min_methods_agree_x=2, 
+  #                                                   min_methods_agree_y=2, 
+  #                                                   method_overruled=method_overruled, 
+  #                                                   allowed_methods_x_female=allowed_methods_x_female, 
+  #                                                   allowed_methods_x_male=allowed_methods_x_male, 
+  #                                                   allowed_methods_y=allowed_methods_y)
   
   #####################################################################
   # Piece together a complete agreement profile
   #####################################################################
-  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_exclude_1, agreement_clonal_overrule, agreement_rounded, agreement_rounded_alt, agreement_rounded_majority_vote, agreement_rounded_alt_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
+  create_consensus_profile = function(segments, agreement_clonal, agreement_clonal_exclude_1, agreement_clonal_overrule, agreement_clonal_majority_vote, agreement_rounded, agreement_rounded_majority_vote, map_broad_baflogr, map_vanloowedge_baflogr) {
     consensus_profile = data.frame()
     r = agreement_rounded$cn_states
     # for (i in 1:length(r)) {
@@ -658,41 +936,33 @@ if (file.exists(breakpoints_file)) {
         }
         new_entry$methods_agree = agreement_clonal_overrule$num_methods_agree[i]
         
+      } else if (agreement_clonal_majority_vote$agree[i]) {
+        # else if rounded clonal agree, choose that and assign 2*
+        new_entry = agreement_clonal_majority_vote$cn_states[[i]][1,1:2]
+        new_entry$star = 2
+        new_entry$level = "d"
+        new_entry$methods_agree = agreement_clonal_majority_vote$num_methods_agree[i]  
+        
       } else if (agreement_rounded$agree[i]) {
         # else if rounded clonal agree, choose that and assign 2*
         new_entry = agreement_rounded$cn_states[[i]][1,2:3]
         new_entry$star = 2
-        new_entry$level = "d"
+        new_entry$level = "e"
         new_entry$methods_agree = agreement_rounded$num_methods_agree[i]
-        
-      } else if (agreement_rounded_alt$agree[i]) {
-        # else if rounded clonal agree, choose that and assign 2*
-        new_entry = agreement_rounded_alt$cn_states[[i]][1,2:3]
-        new_entry$star = 2
-        new_entry$level = "d"
-        new_entry$methods_agree = agreement_rounded_alt$num_methods_agree[i]
         
       } else if (agreement_rounded_majority_vote$agree[i]) {
         # majority vote by > 50% of the methods 
-        new_entry = agreement_rounded_majority_vote$cn_states[[i]][1,1:2]
+        new_entry = agreement_rounded_majority_vote$cn_states[[i]][1,2:3]
         new_entry$star = 2
-        new_entry$level = "e"
+        new_entry$level = "f"
         row.names(new_entry) = NULL
         new_entry$methods_agree = agreement_rounded_majority_vote$num_methods_agree[i]
-        
-      } else if (agreement_rounded_alt_majority_vote$agree[i]) {
-        # majority vote by > 50% of the methods 
-        new_entry = agreement_rounded_alt_majority_vote$cn_states[[i]][1,1:2]
-        new_entry$star = 2
-        new_entry$level = "e"
-        row.names(new_entry) = NULL
-        new_entry$methods_agree = agreement_rounded_alt_majority_vote$num_methods_agree[i]
         
       } else {
         # else no solution for now, below will select the best method for this sample
         new_entry = data.frame(major_cn=NA, minor_cn=NA)
         new_entry$star = 1
-        new_entry$level = "f"
+        new_entry$level = "g"
         new_entry$methods_agree = NA
       }
       
@@ -722,10 +992,9 @@ if (file.exists(breakpoints_file)) {
                                                agreement_clonal, 
                                                agreement_clonal_exclude_1, 
                                                agreement_clonal_overrule, 
+                                               agreement_clonal_majority_vote,
                                                agreement_rounded, 
-                                               agreement_rounded_alt, 
                                                agreement_rounded_majority_vote, 
-                                               agreement_rounded_alt_majority_vote,
                                                all_data_clonal$map_broad_baflogr, 
                                                all_data_clonal$map_vanloowedge_baflogr)
   
@@ -792,7 +1061,8 @@ if (file.exists(breakpoints_file)) {
   #####################################################################
   # Create the consensus using the method that is most often agreeing with the consensus so far
   #####################################################################
-  update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male) {
+  update_consensus_profile = function(consensus_profile, rounded_ranking, all_data_clonal, segments, identified_preferences, identified_preferences_maj_vote, method_overruled, allowed_methods_x_female, allowed_methods_x_male) {
+    # identified_preferences contains alleles that have been identified during rounding, but the other allele count not be found
   
     #' Function that looks for whether a method is allowed to make a call. Some methods do not
     #' participate on X and Y, while single methods are restricted from adding large homozygous
@@ -825,36 +1095,100 @@ if (file.exists(breakpoints_file)) {
       return(TRUE)
     }
     
+    method_reports_identified_allele = function(identified_preferences, closest_method_profile, i) {
+      identified_allele = identified_preferences[i]
+      if (is.na(identified_allele) | is.na(closest_method_profile[[i]])) {
+        return(FALSE)
+      } else {
+        contains_identified_allele = any(closest_method_profile[[i]][[1]]$major_cn==identified_allele | closest_method_profile[[i]][[1]]$minor_cn==identified_allele, na.rm=T)
+        return(contains_identified_allele)
+      }
+    }
+    
+    get_maj_min_call = function(contains_identified_allele, contains_identified_allele_maj_vote, identified_preferences, identified_preferences_maj_vote, closest_method_profile, i, method_name) {
+      entry = closest_method_profile[[i]][[1]]
+      if (contains_identified_allele) {
+        # Pick the best solution with bias from the rounded consensus
+        index = which(entry$major_cn==identified_preferences[i] | entry$minor_cn==identified_preferences[i])
+        index = which.max(entry$ccf[index])
+      } else if (contains_identified_allele_maj_vote) {
+        # Pick the best solution with bias from the rounded consensus - taken by majority vote
+        index = which(entry$major_cn==identified_preferences_maj_vote[i] | entry$minor_cn==identified_preferences_maj_vote[i])
+        index = which.max(entry$ccf[index])
+      } else {
+        # Pick the highest CCF call
+        index = which.max(entry$ccf)
+      }
+      # Round the CN states - in case of DKFZ selected
+      maj = round(entry$major_cn[index])
+      min = round(entry$minor_cn[index])
+      return(list(maj=maj, min=min))
+    }
+    
     closest_method = names(rounded_ranking)[1]
     # Take the best method and exclude baflogr entries here
-    closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_rounded))  & !grepl("baflogr", names(all_data_rounded)))
-    closest_method_profile = all_data_rounded[[closest_method_index]]$cn_states
+    closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_clonal))  & !grepl("baflogr", names(all_data_clonal)))
+    closest_method_profile = all_data_clonal[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
+
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
         
         # Check if the method is allowed to make a call singlehandidly on this segment
         is_allowed = check_if_allowed(segments, closest_method_profile, closest_method, i, allowed_methods_x_female, allowed_methods_x_male)
         
+        # Check if a previously identified allele is reported by this method
+        contains_identified_allele = method_reports_identified_allele(identified_preferences, closest_method_profile, i)
+        contains_identified_allele_maj_vote = method_reports_identified_allele(identified_preferences_maj_vote, closest_method_profile, i)
+        
+        # Make flags for whether this segment has preference and whether there is a previously identified allele
+        has_preference = !is.na(identified_preferences[i]) | !is.na(identified_preferences_maj_vote[i])
+        not_has_preference_or_contains_identified = ((contains_identified_allele | contains_identified_allele_maj_vote) | !has_preference)
+        
+        if (has_preference & !contains_identified_allele) {
+          print(paste0(i, " : ", closest_method, " not right state ", identified_preferences[i], " or ", identified_preferences_maj_vote[i]))
+        }
+        
         # Take the fit of the method that is most often agreeing with the consensus
-        if (is_allowed & !is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]]) && nrow(closest_method_profile[[i]][[1]])>0 && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
-          consensus_profile$major_cn[i] = closest_method_profile[[i]][[1]]$major_cn[1]
-          consensus_profile$minor_cn[i] = closest_method_profile[[i]][[1]]$minor_cn[1]
+        if (is_allowed & not_has_preference_or_contains_identified & !is.null(closest_method_profile[[i]]) && !is.na(closest_method_profile[[i]]) && nrow(closest_method_profile[[i]][[1]])>0 && !is.na(closest_method_profile[[i]][[1]]$minor_cn) && !is.na(closest_method_profile[[i]][[1]]$major_cn)) {
+          res = get_maj_min_call(contains_identified_allele, contains_identified_allele_maj_vote, identified_preferences, identified_preferences_maj_vote, closest_method_profile, i, closest_method)
+          consensus_profile$major_cn[i] = res$maj
+          consensus_profile$minor_cn[i] = res$min
+          
         } else {
           # The most often agreeing method does not make a call, iterate over the others until we find one
-          for (j in which(grepl("map_", names(all_data_rounded)))) {
-            if (!is.na(all_data_rounded[[j]])) {
-              other_closest_method = all_data_rounded[[j]]$cn_states
-              method_name = unlist(stringr::str_split(names(all_data_rounded)[j], "_"))[2]          
+          for (j in which(grepl("map_", names(all_data_clonal)) & !grepl("baflogr", names(all_data_clonal)))) {
+            if (!is.na(all_data_clonal[[j]])) {
+              other_closest_method = all_data_clonal[[j]]$cn_states
+              method_name = unlist(stringr::str_split(names(all_data_clonal)[j], "_"))[2]  
+              if (method_overruled[[method_name]]) { next }
                 
               # Check if the method is allowed to make a call singlehandidly on this segment
               is_allowed = check_if_allowed(segments, other_closest_method, method_name, i, allowed_methods_x_female, allowed_methods_x_male)
-              if (!is_allowed) { next }
+              # Check if a previously identified allele is reported by this method
+              contains_identified_allele = method_reports_identified_allele(identified_preferences, other_closest_method, i)
+              contains_identified_allele_maj_vote = method_reports_identified_allele(identified_preferences_maj_vote, other_closest_method, i)
+              
+              # Make flags for whether this segment has preference and whether there is a previously identified allele
+              has_preference = !is.na(identified_preferences[i]) | !is.na(identified_preferences_maj_vote[i])
+              # not_has_preference_or_contains_identified = ((contains_identified_allele | contains_identified_allele_maj_vote) & has_preference)
+              
+              if (!is_allowed | ((has_preference & !contains_identified_allele) & (has_preference & !contains_identified_allele_maj_vote))) { next }
               
               if (!is.null(other_closest_method[[i]]) && !is.na(other_closest_method[[i]]) && nrow(other_closest_method[[i]][[1]])>0 && !is.na(other_closest_method[[i]][[1]]$minor_cn) && !is.na(other_closest_method[[i]][[1]]$major_cn)) {
-                consensus_profile$major_cn[i] = other_closest_method[[i]][[1]]$major_cn[1]
-                consensus_profile$minor_cn[i] = other_closest_method[[i]][[1]]$minor_cn[1]
+                print(paste0("Segment ", i))
+                print(paste0("Filling in with ", method_name))
+                res = get_maj_min_call(contains_identified_allele, contains_identified_allele_maj_vote, identified_preferences, identified_preferences_maj_vote, other_closest_method, i, closest_method)
+                print(res)
+                consensus_profile$major_cn[i] = res$maj
+                consensus_profile$minor_cn[i] = res$min
                 consensus_profile$star[i] = 1
-                consensus_profile$level[i] = "f"
+                if (((contains_identified_allele | contains_identified_allele_maj_vote) & has_preference)) {
+                  # At least other methods agree on one of the alleles
+                  consensus_profile$level[i] = "g"
+                } else {
+                  # No agreement at all
+                  consensus_profile$level[i] = "h"
+                }
                 consensus_profile$methods_agree[i] = 1
                 break # stop the loop as we've found a match
               }
@@ -866,7 +1200,15 @@ if (file.exists(breakpoints_file)) {
     return(consensus_profile)
   }
   print("Filling in remaining segments with best method...")
-  consensus_profile = update_consensus_profile(consensus_profile, rounded_ranking, all_data_rounded, segments, allowed_methods_x_female, allowed_methods_x_male)
+  consensus_profile = update_consensus_profile(consensus_profile, 
+                                               rounded_ranking, 
+                                               all_data_clonal, 
+                                               segments, 
+                                               agreement_rounded$one_allele_saved, 
+                                               agreement_rounded_majority_vote$one_allele_saved,
+                                               method_overruled,
+                                               allowed_methods_x_female, 
+                                               allowed_methods_x_male)
   
   #####################################################################
   # Mark ploidy unknown samples
@@ -875,7 +1217,7 @@ if (file.exists(breakpoints_file)) {
   marked_unknown = readr::read_tsv(marked_unknown_file, col_names=F)
   if (samplename %in% marked_unknown[[1]]) {
     consensus_profile$star = 1
-    consensus_profile$level = "g"
+    consensus_profile$level = "i"
   }
   
   #####################################################################
