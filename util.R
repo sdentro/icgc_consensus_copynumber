@@ -122,9 +122,11 @@ parse_vanloowedge = function(segmentsfile, purityfile, samplename, sex) {
       dat = dat[dat$chromosome != "X",]
     }
     
-    # Remove all NA calls and artifacts
-    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
-    dat = remove_chr21_artifact(dat)
+    if ("clonal_frequency" %in% colnames(dat) | "cellular_prevalence" %in% colnames(dat)) {
+      # Remove all NA calls and artifacts
+      dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
+      dat = remove_chr21_artifact(dat)
+    }
     if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
@@ -154,13 +156,15 @@ parse_peifer = function(segmentsfile, purityfile, samplename) {
       # What should be CP is encoded as CCF
       dat$ccf = dat$cellular_prevalence
       dat$cellular_prevalence = dat$ccf * (purity+0.000000000000001)
+    
+      # Remove all NA calls and artifacts
+      dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
+      dat = remove_chr21_artifact(dat)
       
     } else {
       # Annotations don't need any adjustments
     }
-    # Remove all NA calls and artifacts
-    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
-    dat = remove_chr21_artifact(dat)
+    
     if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
@@ -235,8 +239,15 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
     if ("ccf" %in% colnames(dat)) {
       dat$end = dat$end - 1
       dat = dat[!is.na(dat$copy_number) & !is.na(dat$major_cn) & !is.na(dat$minor_cn),]
+      
+      # Remove all NA calls and artifacts
+      dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
+      dat = remove_chr21_artifact(dat)
+      
     } else {
       # Annotations don't need any adustments
+      chrpos = paste(dat$chromosome, dat$start, sep="_")
+      dat = dat[!duplicated(chrpos),]
     }
     #' Data already in CCF supplied, no need to convert
     # colnames(dat) = c("chromosome", "start", "end", "copy_number", "major_cn", "minor_cn", "ccf")
@@ -244,9 +255,6 @@ parse_broad = function(segmentsfile, purityfile, samplename) {
     # dat$ccf = dat$cellular_prevalence / purity[1,2]
     # dat$cellular_prevalence = dat$ccf * purity
     
-    # Remove all NA calls and artifacts
-    dat = dat[!is.na(dat$major_cn) & !is.na(dat$minor_cn), ]
-    dat = remove_chr21_artifact(dat)
     if (nrow(dat)==0) { return(NA) }
     return(dat)
   } else {
