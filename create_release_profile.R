@@ -9,7 +9,8 @@
 get_entry_template = function(map, methodname) {
   
   are_null = unlist(lapply(map$cn_states, is.null))
-  first_not_null = which(!are_null)[1]
+  are_na = unlist(lapply(map$cn_states, is.na))
+  first_not_null = which(!are_null & !are_na)[1]
   template = map$cn_states[[first_not_null]][[1]]
   # } else {
   #   stop(paste0("Could not find template for ", methodname))
@@ -199,6 +200,8 @@ samplename = args[1]
 outdir = args[2]
 sex = args[3]
 
+num_threads = 6
+
 # samplename = "005e85a3-3571-462d-8dc9-2babfc7ace21"
 # outdir = "output/"
 # sex = "male"
@@ -271,7 +274,8 @@ if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
                                        method_purityfile=method_purityfile, 
                                        method_baflogr=NULL, 
                                        sex=sex,
-                                       mustonen_has_header=F)  
+                                       mustonen_has_header=F,
+                                       num_threads=num_threads)  
   combined_annotations = combine_all_annotations(all_annotations, overrulings_pivot, nrow(dat))
   
   # PCAWG11 profile with full annotations
