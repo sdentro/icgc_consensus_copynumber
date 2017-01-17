@@ -153,7 +153,8 @@ parse_peifer = function(segmentsfile, purityfile, samplename) {
     dat = read.table(segmentsfile, header=T, stringsAsFactors=F)
     # Remove negative size segments
     dat = dat[(dat$end-dat$start) > 0, ]
-    if ("cellular_prevalence" %in% colnames(dat)) {
+    # If data already processed the CCF/CP problem is fixed
+    if ("cellular_prevalence" %in% colnames(dat) & !"ccf" %in% colnames(dat)) {
       purity = parse_peifer_purity(purityfile, samplename)
       # What should be CP is encoded as CCF
       dat$ccf = dat$cellular_prevalence
@@ -605,7 +606,7 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
       }
       cn_states = cn_segments[queryHits(overlap),]
       
-      # Cleanup potential double clonal calls
+      # Cleanup potential double clonal calls - take the largest segment as has most confidence
       if (sum(cn_states$ccf==1, na.rm=T) > 1) {
         clonal = cn_states[cn_states$ccf==1,]
         seg_size = clonal$end-clonal$start
