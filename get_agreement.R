@@ -413,14 +413,13 @@ get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1
   if (!is.na(method_overruled)) {
     method_overruled = method_overruled[colnames(combined_status)[4:9]]
   }
-  clonal_votes = colnames(combined_status)[which(combined_status[i,] == "clonal")]
   
   agree = rep(F, nrow(segments))
   cn_states = list()
   num_methods = rep(0, nrow(segments))
   one_allele_saved = rep(NA, nrow(segments))
   for (i in 1:nrow(segments)) {
-    
+    clonal_votes = colnames(combined_status)[which(combined_status[i,] == "clonal")]
     ###########################################
     # Do different things when addressing X and Y because there are fewer methods reporting
     ###########################################
