@@ -303,83 +303,90 @@ get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1
     allele_inventory = table(c(inventory_1$major_cn, inventory_1$minor_cn, inventory_2$major_cn[! inventory_2$method %in% clonal_votes], inventory_2$minor_cn[! inventory_2$method %in% clonal_votes]))
     
     num_methods = length(inventory_1$method)
-    hits_inventory = data.frame(allele=as.numeric(names(allele_inventory)))
-    scoring = as.data.frame(matrix(0, nrow=length(allele_inventory), ncol=num_methods))
-    colnames(scoring) = inventory_1$method
-    hits_inventory = data.frame(hits_inventory, scoring)
-    for (j in 1:length(allele_inventory)) {
-      allele = hits_inventory$allele[j]
-      for (method in inventory_1$method) {
-        
-        inv_1_method = inventory_1[inventory_1$method==method,]
-        inv_2_method = inventory_2[inventory_2$method==method,]
-        cn_state_1 = inv_1_method$major_cn==allele | inv_1_method$minor_cn==allele
-        cn_state_2 = inv_2_method$major_cn[!method %in% clonal_votes]==allele | inv_2_method$minor_cn[!method %in% clonal_votes]==allele
-        
-        if (method %in% clonal_votes) {
-          hits_inventory[j, method] = as.numeric(cn_state_1)
-        } else {
-          hits_inventory[j, method] = as.numeric(cn_state_1 | cn_state_2)
-        }
-      }
-    }
-    
-    # Get the qualified hits (i.e. supported by more than 50% of the methods) and take the best one
-    num_hits = rowSums(hits_inventory[,-1])
-    # There are two options: By passing the minimum number of methods or by majority vote with a minimum number of methods reporting
-    if (!do_majority_vote) {
-      qualified_hits = num_hits > min_methods_agree
-    } else {
-      qualified_hits = num_hits > ceiling(num_methods*0.5) & num_methods > min_methods_with_call_on_segment
-    }
-    
-    if (!any(qualified_hits)) {
-      best_hit = NA
-    } else {
-      best_hit = max(num_hits[qualified_hits])
-    }
-    
-    if (!is.na(best_hit) && sum(num_hits==best_hit)==1) {
-      # One result, save that as allele 1 and now look for 2
-      allele_1 = hits_inventory[which(num_hits==best_hit), 1]
-      
-      # We have one state shared by all methods, fix this and find the other
-      inv_1_hit = inventory_1[inventory_1$major_cn==allele_1 | inventory_1$minor_cn==allele_1,]
-      inv_2_hit = inventory_2[(inventory_2$major_cn==allele_1 | inventory_2$minor_cn==allele_1) & !inventory_2$method %in% clonal_votes,]
-      
-      other_allele_options = c()
-      if (nrow(inv_1_hit) > 0) {
-        for (j in 1:nrow(inv_1_hit)) {
-          if (inv_1_hit$major_cn[j]==allele_1) {
-            other_allele_options = c(other_allele_options, inv_1_hit$minor_cn[j])
-          } else {
-            other_allele_options = c(other_allele_options, inv_1_hit$major_cn[j])
-          }
-        }
-      }
-      
-      if (nrow(inv_2_hit) > 0) {
-        for (j in 1:nrow(inv_2_hit)) {
-          if (inv_2_hit$major_cn[j]==allele_1) {
-            other_allele_options = c(other_allele_options, inv_2_hit$minor_cn[j])
-          } else {
-            other_allele_options = c(other_allele_options, inv_2_hit$major_cn[j])
-          }
-        }
-      }
-      
-      other_allele_options = table(other_allele_options)
-      best_hit_other = which.max(other_allele_options)
-      if (sum(other_allele_options==other_allele_options[best_hit_other])==1) {
-        allele_2 = other_allele_options[best_hit_other]
-      } else {
-        allele_2 = NA
-      }
-      
-    } else {
+    if (num_methods < min_methods_with_call_on_segment) {
       # There is no single best allele 1
       allele_1 = NA
       allele_2 = NA
+    } else {
+    
+      hits_inventory = data.frame(allele=as.numeric(names(allele_inventory)))
+      scoring = as.data.frame(matrix(0, nrow=length(allele_inventory), ncol=num_methods))
+      colnames(scoring) = inventory_1$method
+      hits_inventory = data.frame(hits_inventory, scoring)
+      for (j in 1:length(allele_inventory)) {
+        allele = hits_inventory$allele[j]
+        for (method in inventory_1$method) {
+          
+          inv_1_method = inventory_1[inventory_1$method==method,]
+          inv_2_method = inventory_2[inventory_2$method==method,]
+          cn_state_1 = inv_1_method$major_cn==allele | inv_1_method$minor_cn==allele
+          cn_state_2 = inv_2_method$major_cn[!method %in% clonal_votes]==allele | inv_2_method$minor_cn[!method %in% clonal_votes]==allele
+          
+          if (method %in% clonal_votes) {
+            hits_inventory[j, method] = as.numeric(cn_state_1)
+          } else {
+            hits_inventory[j, method] = as.numeric(cn_state_1 | cn_state_2)
+          }
+        }
+      }
+      
+      # Get the qualified hits (i.e. supported by more than 50% of the methods) and take the best one
+      num_hits = rowSums(hits_inventory[,-1])
+      # There are two options: By passing the minimum number of methods or by majority vote with a minimum number of methods reporting
+      if (!do_majority_vote) {
+        qualified_hits = num_hits > min_methods_agree
+      } else {
+        qualified_hits = num_hits > ceiling(num_methods*0.5) & num_methods > min_methods_with_call_on_segment
+      }
+      
+      if (!any(qualified_hits)) {
+        best_hit = NA
+      } else {
+        best_hit = max(num_hits[qualified_hits])
+      }
+      
+      if (!is.na(best_hit) && sum(num_hits==best_hit)==1) {
+        # One result, save that as allele 1 and now look for 2
+        allele_1 = hits_inventory[which(num_hits==best_hit), 1]
+        
+        # We have one state shared by all methods, fix this and find the other
+        inv_1_hit = inventory_1[inventory_1$major_cn==allele_1 | inventory_1$minor_cn==allele_1,]
+        inv_2_hit = inventory_2[(inventory_2$major_cn==allele_1 | inventory_2$minor_cn==allele_1) & !inventory_2$method %in% clonal_votes,]
+        
+        other_allele_options = c()
+        if (nrow(inv_1_hit) > 0) {
+          for (j in 1:nrow(inv_1_hit)) {
+            if (inv_1_hit$major_cn[j]==allele_1) {
+              other_allele_options = c(other_allele_options, inv_1_hit$minor_cn[j])
+            } else {
+              other_allele_options = c(other_allele_options, inv_1_hit$major_cn[j])
+            }
+          }
+        }
+        
+        if (nrow(inv_2_hit) > 0) {
+          for (j in 1:nrow(inv_2_hit)) {
+            if (inv_2_hit$major_cn[j]==allele_1) {
+              other_allele_options = c(other_allele_options, inv_2_hit$minor_cn[j])
+            } else {
+              other_allele_options = c(other_allele_options, inv_2_hit$major_cn[j])
+            }
+          }
+        }
+        
+        other_allele_options = table(other_allele_options)
+        best_hit_other = which.max(other_allele_options)
+        if (sum(other_allele_options==other_allele_options[best_hit_other])==1) {
+          allele_2 = other_allele_options[best_hit_other]
+        } else {
+          allele_2 = NA
+        }
+        
+      } else {
+        # There is no single best allele 1
+        allele_1 = NA
+        allele_2 = NA
+      }
     }
     return(list(allele_1=allele_1, allele_2=allele_2))
   }
@@ -1244,6 +1251,44 @@ if (file.exists(breakpoints_file)) {
     print(paste0(samplename, " contains segments with CN state lower than 1"))
   }
   
+  #####################################################################
+  # Check centromeres
+  #####################################################################
+  reset_segment = function(consensus_profile, i) {
+    consensus_profile$major_cn[i] = NA
+    consensus_profile$minor_cn[i] = NA
+    consensus_profile$star[i] = NA
+    consensus_profile$level[i] = NA
+    consensus_profile$methods_agree[i] = NA
+    return(consensus_profile)
+  }
+  
+  
+  cent = Battenberg::read_table_generic("centromere.txt", header=F)
+  colnames(cent) = c("chr", "start", "end")
+  cent.gr = GRanges(cent$chr, IRanges(cent$start, cent$end))
+  consensus_profile.gr = GRanges(consensus_profile$chromosome, IRanges(consensus_profile$start, consensus_profile$end))
+  overlap = findOverlaps(cent.gr, consensus_profile.gr, minoverlap=100)
+  for (i in subjectHits(overlap)) {
+    sel = consensus_profile[c(i-1, i, i+1),]
+    # If the segment itself is NA, no need to check
+    if (is.na(consensus_profile$major_cn[2]) | is.na(consensus_profile$minor_cn[2])) { next }
+    
+    if (!all(sel$major_cn==sel$major_cn[1] & sel$minor_cn==sel$minor_cn[1], na.rm=T)) {
+      consensus_profile = reset_segment(consensus_profile, i)
+    }
+  }
+  
+  #####################################################################
+  # Reset NA regions
+  #####################################################################
+  for (i in which(is.na(consensus_profile$major_cn) | is.na(consensus_profile$minor_cn))) {
+    consensus_profile = reset_segment(consensus_profile, i)
+  }
+  
+  #####################################################################
+  # Save output
+  #####################################################################
   write.table(consensus_profile, file=file.path(outdir, "consensus_profile", paste0(samplename, "_consensus_profile.txt")), quote=F, sep="\t", row.names=F)
   
   # TODO bugfix : Is creating the full data.frame here needed? it's done above already?
