@@ -281,7 +281,7 @@ get_frac_genome_agree_maj_vote = function(samplename, all_data, segments, allowe
 #' @param method_overruled A data frame with a single row and a column per method. Each cell contains TRUE if the method is to be overruled
 get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1, all_data_2, all_data_3, segments, do_majority_vote=FALSE, min_methods_agree=0, min_methods_agree_x=0, min_methods_agree_y=0, min_methods_with_call_on_segment=2, min_methods_with_call_on_segment_x=2, min_methods_with_call_on_segment_y=2, method_overruled=NA, allowed_methods_x_female=c("dkfz", "mustonen", "vanloowedge", "jabba", "broad"), allowed_methods_x_male=c("dkfz", "mustonen", "jabba", "broad"), allowed_methods_y=c("dkfz", "jabba")) {
   
-  get_all_states = function(all_maps_1, methods_with_result) {
+  get_all_states = function(all_maps_1, methods_with_result, i) {
     inventory_1 = data.frame()
     for (j in 1:length(all_maps_1)) {
       map = all_maps_1[[j]]
@@ -316,9 +316,10 @@ get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1
       colnames(scoring) = inventory_1$method
       hits_inventory = data.frame(hits_inventory, scoring)
       for (j in 1:length(allele_inventory)) {
+        print(j)
         allele = hits_inventory$allele[j]
         for (method in inventory_1$method) {
-          
+          print(method)
           inv_1_method = inventory_1[inventory_1$method==method,]
           inv_2_method = inventory_2[inventory_2$method==method,]
           cn_state_1 = inv_1_method$major_cn==allele | inv_1_method$minor_cn==allele
@@ -431,6 +432,7 @@ get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1
   num_methods = rep(0, nrow(segments))
   one_allele_saved = rep(NA, nrow(segments))
   for (i in 1:nrow(segments)) {
+    print(i)
     clonal_votes = colnames(combined_status)[which(combined_status[i,] == "clonal")]
     ###########################################
     # Do different things when addressing X and Y because there are fewer methods reporting
@@ -470,8 +472,8 @@ get_frac_genome_agree_rounded = function(samplename, all_data_clonal, all_data_1
     ###########################################
     # Fetch all the CN states for this segment
     ###########################################    
-    inventory_1 = get_all_states(all_maps_1, methods_with_result)
-    inventory_2 = get_all_states(all_maps_2, methods_with_result)
+    inventory_1 = get_all_states(all_maps_1, methods_with_result, i)
+    inventory_2 = get_all_states(all_maps_2, methods_with_result, i)
     
     ###########################################
     # Perform the voting - option 1
@@ -1141,7 +1143,6 @@ if (file.exists(breakpoints_file)) {
     closest_method_index = which(grepl(paste0("map_", closest_method), names(all_data_clonal))  & !grepl("baflogr", names(all_data_clonal)))
     closest_method_profile = all_data_clonal[[closest_method_index]]$cn_states
     for (i in 1:nrow(consensus_profile)) {
-      print(i)
       if (is.na(consensus_profile$major_cn[i]) && is.na(consensus_profile$minor_cn[i])) {
         
         # Check if the method is allowed to make a call singlehandidly on this segment
