@@ -106,8 +106,8 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     }
     anno_vanloowedge = make_anno_complete(anno_vanloowedge, dat, all_annotations$map_vanloowedge, num_segments, "battenberg")
   } else {
-    anno_vanloowedge = data.frame(matrix(NA, num_segments, 13))
-    colnames(anno_vanloowedge) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")
+    anno_vanloowedge = data.frame(matrix(NA, num_segments, 10))
+    colnames(anno_vanloowedge) = c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A", "SDfrac_A", "SDfrac_A_BS", "frac1_A_0.025", "frac1_A_0.975")
     colnames(anno_vanloowedge) = paste0("battenberg_", colnames(anno_vanloowedge))
   }
   
@@ -120,11 +120,12 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     }
     anno_broad = make_anno_complete(anno_broad, dat, all_annotations$map_broad, num_segments, "absolute")
   } else {
-    anno_broad = data.frame(matrix(NA, num_segments, 7))
-    colnames(anno_broad) = c("chromosome", "start", "end", "broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")
+    anno_broad = data.frame(matrix(NA, num_segments, 4))
+    colnames(anno_broad) = c("broad_major_cn", "broad_minor_cn", "broad_het_error", "broad_cov_error")
     colnames(anno_broad) = paste0("absolute_", colnames(anno_broad))
   }
   
+  colnames_dkfz = c("copy_number", "minor_cn", "major_cn", "cellular_prevalence", "dh", "covRatio")
   if (!is.na(all_annotations$map_dkfz)) {
     if (all(unlist(lapply(all_annotations$map_dkfz$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_dkfz = do.call(rbind, padd_empty_entries(all_annotations$map_dkfz, "ACEseq"))
@@ -134,11 +135,13 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     }
     anno_dkfz = make_anno_complete(anno_dkfz, dat, all_annotations$map_dkfz, num_segments, "aceseq")
   } else {
-    anno_dkfz = data.frame(matrix(NA, num_segments, 9))
-    colnames(anno_dkfz) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn", "ccf", "dh", "covRatio")
+    anno_dkfz = data.frame(matrix(NA, num_segments, length(colnames_dkfz)))
+    colnames(anno_dkfz) = colnames_dkfz
     colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
   }
+  anno_dkfz = anno_dkfz[, c("copy_number", "minor_cn", "major_cn")]
   
+  colnames_mustonen = c("copy_number", "minor_cn", "major_cn", "clonal_frequency")
   if (!is.na(all_annotations$map_mustonen)) {
     if (all(unlist(lapply(all_annotations$map_mustonen$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_mustonen = do.call(rbind, padd_empty_entries(all_annotations$map_mustonen, "CloneHD"))
@@ -149,11 +152,13 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     }
     anno_mustonen = make_anno_complete(anno_mustonen, dat, all_annotations$map_mustonen, num_segments, "clonehd")
   } else {
-    anno_mustonen = data.frame(matrix(NA, num_segments, 6))
-    colnames(anno_mustonen) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn")
+    anno_mustonen = data.frame(matrix(NA, num_segments, length(colnames_mustonen)))
+    colnames(anno_mustonen) = colnames_mustonen
     colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
   }
+  anno_mustonen = anno_mustonen[, c("copy_number", "minor_cn", "major_cn")]
   
+  colnames_jabba = c("copy_number", "minor_cn", "major_cn", "cellular_prevalence")
   if (!is.na(all_annotations$map_jabba)) {
     if (all(unlist(lapply(all_annotations$map_jabba$cn_states, function(x) nrow(x[[1]]))) == 1)) {
       anno_jabba = do.call(rbind, padd_empty_entries(all_annotations$map_jabba, "JaBbA"))
@@ -164,10 +169,11 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     }
     anno_jabba = make_anno_complete(anno_jabba, dat, all_annotations$map_jabba, num_segments, "jabba")
   } else {
-    anno_jabba = data.frame(matrix(NA, num_segments, 6))
-    colnames(anno_jabba) = c("chromosome", "start", "end", "copy_number", "minor_cn", "major_cn")
+    anno_jabba = data.frame(matrix(NA, num_segments, 4))
+    colnames(anno_jabba) = colnames_jabba
     colnames(anno_jabba) = paste0("jabba_", colnames(anno_jabba))
   }
+  anno_jabba = anno_jabba[, c("copy_number", "minor_cn", "major_cn")]
   
   # Sclust setup adapted. The padd_empty_entries function removes any problematic mappings
   # This is due to the segmentation of Sclust being far too lenient in positions
@@ -183,8 +189,8 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     #}
     anno_peifer = make_anno_complete(anno_peifer, dat, all_annotations$map_peifer, num_segments, "sclust")
   } else {
-    anno_peifer = data.frame(matrix(NA, num_segments, 9))
-    colnames(anno_peifer) = c("chromosome", "start", "end", "nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
+    anno_peifer = data.frame(matrix(NA, num_segments, 6))
+    colnames(anno_peifer) = c("nMaj1_A", "nMin1_A", "frac1_A", "nMaj2_A", "nMin2_A", "frac2_A")
     colnames(anno_peifer) = paste0("sclust_", colnames(anno_peifer))
   }
   
