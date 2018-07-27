@@ -8,9 +8,9 @@ The pipeline takes copy number profiles from six individual callers (ABSOLUTE, A
 
 The procedure then works as follows
 
-* Subclonal copy number is rounded, both up and down: consensus_subclonal_copynumber.R
-* The profiles are combined into a consensus: get_agreement.R
-* Finally, the release profile is created: create_release_profile.R
+* Subclonal copy number is rounded, both up and down: `consensus_subclonal_copynumber.R`
+* The profiles are combined into a consensus: `get_agreement.R`
+* Finally, the release profile is created: `create_release_profile.R`
 
 ## Dependencies
 
@@ -35,12 +35,6 @@ This pipeline takes input data that has been bundled and is available TODO
 * Consensus breakpoints (established by the consensus breakpoints procedure available TODO)
 * Copy number profiles from the six methods with various annotations
 
-## How to run the pipeline
-
-```
-TODO
-```
-
 ## TODO setup instructions
 
 Steps
@@ -50,3 +44,9 @@ Steps
     * extract bundle
     * mkdir output output/broad_rounded_clonal output/broad_rounded_alt_clonal output/consensus_profile output/consensus_profile_final output/dkfz_rounded_alt_clonal output/dkfz_rounded_clonal output/figures output/mustonen_rounded_alt_clonal output/mustonen_rounded_clonal output/pcawg11_consensus_profile output/peifer_rounded_alt_clonal output/peifer_rounded_clonal output/saves output/status_inventory output/summary_stats output/vanloowedge_rounded_alt_clonal output/vanloowedge_rounded_clonal output/raw_ploidy
 * run the pipeline (TODO make a single bash script that runs all steps per sample)
+
+## How to run the pipeline
+
+```
+TODO
+```
