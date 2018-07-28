@@ -12,10 +12,20 @@ The procedure then works as follows
 * The profiles are combined into a consensus: `get_agreement.R`
 * Finally, the release profile is created: `create_release_profile.R`
 
+The runtime of the procedure is dependent upon the number of segments, but typically takes about 30 minutes on a single core.
+
 ## Dependencies
 
-R libraries
+Software packages used to develop the code and run the pipeline on the PCAWG dataset. Installation of these packages should normally take a few minutes via Bioconductor.
+
 ```
+R (version 3.1.0)
+```
+
+R libraries (all installed via Bioconductor)
+```
+Bioconductor (version 3.0)
+BiocInstaller (version 1.16.5)
 readr
 GenomicRanges
 gtools
@@ -35,7 +45,7 @@ This pipeline takes input data that has been bundled and is available TODO
 * Consensus breakpoints (established by the consensus breakpoints procedure available TODO)
 * Copy number profiles from the six methods with various annotations
 
-## TODO setup instructions
+## Setup instructions - this is work in progress
 
 Steps
 
@@ -50,3 +60,34 @@ Steps
 ```
 TODO
 ```
+
+## Produced output
+The pipeline produces two files for each sample:
+
+A file with the publically released PCAWG consensus copy number profile. It contains a row per copy number segment and with the following columns
+
+| Column | Description |
+| --- | --- |
+| chromosome | Chromosome the segment is based |
+| start and end | Start and end coordinates of the segment |
+| total_cn, major_cn and minor_cn | The total copy number and the copy number of the major and minor allele respectively |
+| star | Quality rating where 3 represents the highest quality, 2 medium and 1 the lowest |
+
+A file with the internally released PCAWG-11 consensus copy number profile. The copy number is exactly the same as in the above file, but more columns have been added that provide information required for other analysis within PCAWG-11. It contains a row per copy number segment and with the following columns
+
+| Column | Description |
+| --- | --- |
+| chromosome | Chromosome the segment is based |
+| start and end | Start and end coordinates of the segment |
+| total_cn, major_cn and minor_cn | The total copy number and the copy number of the major and minor allele respectively |
+| star | Quality rating where 3 represents the highest quality, 2 medium and 1 the lowest |
+| level | More fine grained detail assignment of quality, please see our manuscript for more details |
+| methods_agree | The number of methods that have agreed upon the copy number of this segment |
+| absolute* | Additional columns provided by ABSOLUTE |
+| aceseq* | Additional columns provided by Aceseq |
+| battenberg* | Additional columns provided by Battenberg |
+| clonehd* | Additional columns provided by cloneHD |
+| jabba* | Additional columns provided by JaBbA |
+
+
+
