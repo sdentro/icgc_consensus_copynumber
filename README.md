@@ -39,7 +39,7 @@ reshape2
 
 ## Data bundle
 
-This pipeline takes input data that has been bundled and is available TODO
+This pipeline takes input data that has been bundled and is available [here](https://www.synapse.org/#!Synapse:syn15426870) (access restricted)
 
 * Inferred sex of the patient (processed output of the Sanger PCAWG pipeline)
 * Consensus breakpoints (established by the consensus breakpoints procedure available TODO)
@@ -49,16 +49,16 @@ This pipeline takes input data that has been bundled and is available TODO
 
 Steps
 
-* download the data bundle (TODO refer to a synapse id)
+* download the data [bundle](https://www.synapse.org/#!Synapse:syn15426870)
 * run the setup_environment.sh script that:
     * extract bundle
     * mkdir output output/broad_rounded_clonal output/broad_rounded_alt_clonal output/consensus_profile output/consensus_profile_final output/dkfz_rounded_alt_clonal output/dkfz_rounded_clonal output/figures output/mustonen_rounded_alt_clonal output/mustonen_rounded_clonal output/pcawg11_consensus_profile output/peifer_rounded_alt_clonal output/peifer_rounded_clonal output/saves output/status_inventory output/summary_stats output/vanloowedge_rounded_alt_clonal output/vanloowedge_rounded_clonal output/raw_ploidy
 * run the pipeline (TODO make a single bash script that runs all steps per sample)
 
-## How to run the pipeline
+## How to run the pipeline - work in progress
 
 ```
-TODO
+TODO - integrate the different steps into a single pipeline
 ```
 
 ## Produced output
