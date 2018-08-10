@@ -8,7 +8,7 @@ The pipeline takes copy number profiles from six individual callers (ABSOLUTE, A
 
 The procedure then works as follows
 
-* Subclonal copy number is rounded, both up and down: `consensus_subclonal_copynumber.R`
+* Subclonal copy number is rounded, both up and down: `round_profile.R`
 * The profiles are combined into a consensus: `get_agreement.R`
 * Finally, the release profile is created: `create_release_profile.R`
 
@@ -52,7 +52,7 @@ Steps
 * download the data [bundle](https://www.synapse.org/#!Synapse:syn15426870)
 * run the setup_environment.sh script that:
     * extract bundle
-    * mkdir output output/broad_rounded_clonal output/broad_rounded_alt_clonal output/consensus_profile output/consensus_profile_final output/dkfz_rounded_alt_clonal output/dkfz_rounded_clonal output/figures output/mustonen_rounded_alt_clonal output/mustonen_rounded_clonal output/pcawg11_consensus_profile output/peifer_rounded_alt_clonal output/peifer_rounded_clonal output/saves output/status_inventory output/summary_stats output/vanloowedge_rounded_alt_clonal output/vanloowedge_rounded_clonal output/raw_ploidy
+    * mkdir output output/broad_rounded_clonal output/broad_rounded_alt_clonal output/consensus_profile output/consensus_profile_final output/dkfz_rounded_alt_clonal output/dkfz_rounded_clonal output/figures output/mustonen_rounded_alt_clonal output/mustonen_rounded_clonal output/pcawg11_consensus_profile output/peifer_rounded_alt_clonal output/peifer_rounded_clonal output/saves output/status_inventory output/summary_stats output/vanloowedge_rounded_alt_clonal output/vanloowedge_rounded_clonal output/raw_ploidy output/jabba_rounded_clonal output/jabba_rounded_alt_clonal
 * run the pipeline (TODO make a single bash script that runs all steps per sample)
 
 ## How to run the pipeline - work in progress

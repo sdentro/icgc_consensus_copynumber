@@ -405,8 +405,8 @@ parse_all_purities = function(samplename, method_purityfile) {
   return(list(broad=purity_broad, dkfz=purity_dkfz, mustonen=purity_mustonen, peifer=purity_peifer, vanloowedge=purity_vanloowedge, jabba=purity_jabba))
 }
 
-parse_dummy_cn_profile = function(nmaj=NA, nmin=NA) {
-  temp = read.table("segmentation_chrom_arms_full.txt", header=T, stringsAsFactors=F)
+parse_dummy_cn_profile = function(libpath, nmaj=NA, nmin=NA) {
+  temp = read.table(file.path(libpath, "segmentation_chrom_arms_full.txt"), header=T, stringsAsFactors=F)
   temp$nMaj1_A = nmaj
   temp$nMin1_A = nmin
   return(temp)
@@ -653,8 +653,8 @@ mapdata = function(bp_segments, cn_segments, is_dkfz=F, dkfz_subclonality_cutoff
 }
 
 #' Collapse the cn states inventory into a BB profile that can be plotted
-collapse2bb = function(segments, cn_states, broad=F) {
-  bb_template = parse_bb_template()
+collapse2bb = function(segments, cn_states, libpath, broad=F) {
+  bb_template = parse_bb_template(libpath)
   cn_bb = data.frame()
   for (i in 1:length(cn_states)) {
 
@@ -733,8 +733,8 @@ collapse2bb = function(segments, cn_states, broad=F) {
 }
 
 #' Collapse data in rounded clonal format to BB native
-collapseRoundedClonal2bb = function(cn_states) {
-  bb_template = parse_bb_template()
+collapseRoundedClonal2bb = function(cn_states, libpath) {
+  bb_template = parse_bb_template(libpath)
   cn_bb = data.frame()
   
   for (i in 1:nrow(cn_states)) {
@@ -782,8 +782,8 @@ plot_profile = function(subclones, method_name, max.plot.cn=3) {
   return(p1)
 }
 
-parse_bb_template = function() {
-  bb_template = read.table("segmentation_chrom_arms_full.txt", header=T, stringsAsFactors=F)[1,,drop=F]
+parse_bb_template = function(libpath) {
+  bb_template = read.table(file.path(libpath, "segmentation_chrom_arms_full.txt"), header=T, stringsAsFactors=F)[1,,drop=F]
   bb_template$chr = NA
   bb_template$startpos = NA
   bb_template$endpos = NA
@@ -942,9 +942,9 @@ get_ploidy_status = function(subclones, min_frac_genome_state=0.2) {
   return(status)
 }
 
-get_ploidy = function(segments, map, broad=F) {
+get_ploidy = function(segments, map, libpath, broad=F) {
   if (!is.na(map)) {
-    cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
+    cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, libpath=libpath, broad=broad)
     return(list(ploidy=round(calc_ploidy(cn_bb), 4), status=get_ploidy_status(cn_bb)))
   } else {
     return(list(ploidy=NA, status=NA))
