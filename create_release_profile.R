@@ -139,7 +139,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_dkfz) = colnames_dkfz
     colnames(anno_dkfz) = paste0("aceseq_", colnames(anno_dkfz))
   }
-  anno_dkfz = anno_dkfz[, c("copy_number", "minor_cn", "major_cn")]
+  anno_dkfz = anno_dkfz[,  paste0("aceseq_",c("copy_number", "minor_cn", "major_cn"))]
   
   colnames_mustonen = c("copy_number", "minor_cn", "major_cn", "clonal_frequency")
   if (!is.na(all_annotations$map_mustonen)) {
@@ -156,7 +156,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_mustonen) = colnames_mustonen
     colnames(anno_mustonen) = paste0("clonehd_", colnames(anno_mustonen))
   }
-  anno_mustonen = anno_mustonen[, c("copy_number", "minor_cn", "major_cn")]
+  anno_mustonen = anno_mustonen[, paste0("clonehd_", c("copy_number", "minor_cn", "major_cn"))]
   
   colnames_jabba = c("copy_number", "minor_cn", "major_cn", "cellular_prevalence")
   if (!is.na(all_annotations$map_jabba)) {
@@ -173,7 +173,7 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
     colnames(anno_jabba) = colnames_jabba
     colnames(anno_jabba) = paste0("jabba_", colnames(anno_jabba))
   }
-  anno_jabba = anno_jabba[, c("copy_number", "minor_cn", "major_cn")]
+  anno_jabba = anno_jabba[, paste0("jabba_", c("copy_number", "minor_cn", "major_cn"))]
   
   # Sclust setup adapted. The padd_empty_entries function removes any problematic mappings
   # This is due to the segmentation of Sclust being far too lenient in positions
@@ -207,13 +207,15 @@ combine_all_annotations = function(all_annotations, overrulings_pivot, num_segme
 
 
 # samplename = "6aa00162-6294-4ce7-b6b7-0c3452e24cd6"
-source("~/repo/icgc_consensus_copynumber_final/util.R")
+
 
 args = commandArgs(T)
-samplename = args[1]
-outdir = args[2]
-sex = args[3]
+libpath = args[1]
+samplename = args[2]
+outdir = args[3]
+sex = args[4]
 
+source(file.path(libpath, "util.R"))
 num_threads = 6
 
 # samplename = "005e85a3-3571-462d-8dc9-2babfc7ace21"
@@ -223,10 +225,11 @@ num_threads = 6
 current_date = gsub("-", "", Sys.Date())
 
 cons_profile_file = file.path("output/consensus_profile", paste0(samplename, "_consensus_profile.txt"))
-breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
-summary_stats_file = file.path("summary_stats.txt")
-purity_overrulings_file = file.path("icgc_purity_overrulings.txt")
-purity_and_ploidy_overrulings_file = file.path("icgc_purity_and_ploidy_overrulings.txt")
+summary_stats_file = file.path("output/summary_stats/", paste0(samplename, "_summary_stats.txt"))
+
+purity_overrulings_file = "data_bundle/icgc_purity_overrulings.txt"
+purity_and_ploidy_overrulings_file = "data_bundle/icgc_purity_and_ploidy_overrulings.txt"
+breakpoints_file = file.path("data_bundle/consensus_breakpoints", paste0(samplename, ".txt"))
 
 # overrulings_pivot = as.data.frame(readr::read_tsv("manual_review_overrulings_pivot_table.txt"))
 # overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
@@ -247,21 +250,22 @@ overrulings_pivot = overrulings | purity_and_ploidy_overrulings[colnames(overrul
 if (file.exists(cons_profile_file) & file.exists(breakpoints_file)) {
   print("Reading in and mapping data...")
   dat = read.table(cons_profile_file, header=T, stringsAsFactors=F)  
-  breakpoints = read.table(file.path("consensus_bp", paste0(samplename, ".txt")), header=T, stringsAsFactors=F)
+  breakpoints = read.table(breakpoints_file, header=T, stringsAsFactors=F)
   segments = breakpoints2segments(breakpoints)
 
-  dkfz_segmentsfile = paste0("dkfz_annotations/", samplename, "_annotations.txt")
-  dkfz_purityfile = "purity_ploidy_dkfz.txt"
-  vanloowedge_segmentsfile = paste0("vanloowedge_annotations/", samplename, "_annotations.txt")
-  vanloowedge_purityfile = "purity_ploidy_vanloowedge.txt"
-  peifer_segmentsfile = paste0("peifer_annotations/", samplename, "_annotations.txt")
-  peifer_purityfile = "purity_ploidy_peifer.txt"
-  mustonen_segmentsfile = paste0("mustonen_annotations/", samplename, "_annotations.txt")
-  mustonen_purityfile = "purity_ploidy_mustonen.txt"
-  broad_segmentsfile = paste0("broad_annotations/", samplename, "_annotations.txt")
-  broad_purityfile = "purity_ploidy_broad.txt"
-  jabba_segmentsfile = paste0("jabba_annotations/", samplename, "_annotations.txt")
-  jabba_purityfile = "purity_ploidy_jabba.txt"
+  data_bundle_profiles_path = "data_bundle/input_profiles/"
+  dkfz_segmentsfile = file.path(data_bundle_profiles_path, paste0("dkfz/annotations/", samplename, "_annotations.txt"))
+  dkfz_purityfile = file.path(data_bundle_profiles_path, paste0("dkfz/purity_ploidy.txt"))
+  vanloowedge_segmentsfile = file.path(data_bundle_profiles_path, paste0("vanloo_wedge/annotations/", samplename, "_annotations.txt"))
+  vanloowedge_purityfile = file.path(data_bundle_profiles_path, paste0("vanloo_wedge/purity_ploidy.txt"))
+  peifer_segmentsfile = file.path(data_bundle_profiles_path, paste0("peifer_annotations/", samplename, "_annotations.txt"))
+  peifer_purityfile = file.path(data_bundle_profiles_path, paste0("peifer/purity/ploidy.txt"))
+  mustonen_segmentsfile = file.path(data_bundle_profiles_path, paste0("mustonen/annotations/", samplename, "_annotations.txt"))
+  mustonen_purityfile = file.path(data_bundle_profiles_path, paste0("mustonen/purity_ploidy.txt"))
+  broad_segmentsfile = file.path(data_bundle_profiles_path, paste0("broad/annotations/", samplename, "_annotations.txt"))
+  broad_purityfile = file.path(data_bundle_profiles_path, paste0("broad/purity_ploidy.txt"))
+  jabba_segmentsfile = file.path(data_bundle_profiles_path, paste0("jabba/annotations/", samplename, "_annotations.txt"))
+  jabba_purityfile = file.path(data_bundle_profiles_path, paste0("jabba/purity_ploidy.txt"))
   
   method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                              vanloowedge=vanloowedge_segmentsfile,

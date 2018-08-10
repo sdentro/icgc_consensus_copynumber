@@ -575,30 +575,21 @@ test_purities = function(purities, consensus_profile) {
   return(output)
 }
 
-get_ploidy = function(segments, map, broad=F) {
-  if (!is.na(map)) {
-    cn_bb = collapse2bb(segments=segments, cn_states=map$cn_states, broad=broad)
-    return(list(ploidy=round(calc_ploidy(cn_bb), 4), status=get_ploidy_status(cn_bb)))
-  } else {
-    return(list(ploidy=NA, status=NA))
-  }
-}
 
 #####################################################################
 # Original agreement
 #####################################################################
-# setwd("~/Documents/Projects/icgc/consensus_subclonal_copynumber/final_run_testing/")
+args = commandArgs(T)
+libpath = args[1]
+samplename = args[2]
+outdir = args[3]
+sex = args[4]
 
 library(readr)
-source("~/repo/icgc_consensus_copynumber_final/util.R")
+source(file.path(libpath,"util.R"))
 max.plot.cn=4
 num_threads=1
 
-
-args = commandArgs(T)
-samplename = args[1]
-outdir = args[2]
-sex = args[3]
 
 # setwd("/Users/sd11/Documents/Projects/icgc/consensus_subclonal_copynumber/6aa00162-6294-4ce7-b6b7-0c3452e24cd6")
 # outdir = "./"
@@ -614,11 +605,11 @@ sex = args[3]
 # sex = "male"
 
 
-breakpoints_file = file.path("consensus_bp", paste0(samplename, ".txt"))
+breakpoints_file = file.path("data_bundle/consensus_breakpoints", paste0(samplename, ".txt"))
 # expected_ploidy_file = "consensus.20161103.purity.ploidy.txt.gz" # Removed after ploidy has been reinferred after fixes
-expected_ploidy_file = "icgc_pcawg_reference_ploidy_final_alpha.txt"
-marked_unknown_file = "icgc_marked_uknown.lst"
-purity_based_overrulings_file = "icgc_purity_and_ploidy_overrulings.txt"
+expected_ploidy_file = "data_bundle/icgc_pcawg_reference_ploidy_final_alpha.txt"
+marked_unknown_file = "data_bundle/icgc_marked_uknown.lst"
+purity_based_overrulings_file = "data_bundle/icgc_purity_and_ploidy_overrulings.txt"
 # the reference ploidy is multiplied by this factor to determine how much of a deviation is tolerated
 max_expected_ploidy_diff_factor = 0.25
 allowed_methods_x_female = c("dkfz", "mustonen", "vanloowedge", "jabba", "broad")
@@ -627,7 +618,7 @@ allowed_methods_y = c("dkfz", "jabba", "broad")
 
 # Table with overrulings 
 # overrulings_pivot = readr::read_tsv("~/Documents/Projects/icgc/consensus_subclonal_copynumber/manual_review_overrulings_pivot_table.txt")
-overrulings_pivot = readr::read_tsv("manual_review_overrulings_pivot_table.txt")
+overrulings_pivot = readr::read_tsv("data_bundle/manual_review_overrulings_pivot_table.txt")
 overrulings_pivot = overrulings_pivot[overrulings_pivot$samplename==samplename,]
 
 if (nrow(overrulings_pivot)==1 & sum(!is.na(overrulings_pivot)) > 1) {
@@ -639,23 +630,25 @@ if (nrow(overrulings_pivot)==1 & sum(!is.na(overrulings_pivot)) > 1) {
 if (file.exists(breakpoints_file)) {
   print("Reading in and mapping data...")
   
-  breakpoints = read.table(file.path("consensus_bp", paste0(samplename, ".txt")), header=T, stringsAsFactors=F)
+  breakpoints = read.table(file.path("data_bundle/consensus_breakpoints", paste0(samplename, ".txt")), header=T, stringsAsFactors=F)
   segments = breakpoints2segments(breakpoints)
   
-  dkfz_segmentsfile = paste0("dkfz/", samplename, "_segments.txt")
-  dkfz_purityfile = "purity_ploidy_dkfz.txt"
-  vanloowedge_segmentsfile = paste0("vanloowedge/", samplename, "_segments.txt")
-  vanloowedge_purityfile = "purity_ploidy_vanloowedge.txt"
-  peifer_segmentsfile = paste0("peifer/", samplename, "_segments.txt")
-  peifer_purityfile = "purity_ploidy_peifer.txt"
-  mustonen_segmentsfile = paste0("mustonen/", samplename, "_segments.txt")
-  mustonen_purityfile = "purity_ploidy_mustonen.txt"
-  broad_segmentsfile = paste0("broad/", samplename, "_segments.txt")
-  broad_purityfile = "purity_ploidy_broad.txt"
-  jabba_segmentsfile = paste0("jabba/", samplename, "_segments.txt")
-  jabba_purityfile = "purity_ploidy_jabba.txt"
-  vanloowedge_baflogrfile = paste0("vanloowedge_baflogr/", samplename, "_baflogr.txt")
-  broad_baflogrfile = paste0("broad_baflogr/", samplename, "_baflogr.txt")
+  data_bundle_profiles_path = "data_bundle/input_profiles/"
+  dkfz_segmentsfile = file.path(data_bundle_profiles_path, paste0("dkfz/segments/", samplename, "_segments.txt"))
+  dkfz_purityfile = file.path(data_bundle_profiles_path, paste0("dkfz/purity_ploidy.txt"))
+  vanloowedge_segmentsfile = file.path(data_bundle_profiles_path, paste0("vanloo_wedge/segments/", samplename, "_segments.txt"))
+  vanloowedge_purityfile = file.path(data_bundle_profiles_path, paste0("vanloo_wedge/purity_ploidy.txt"))
+  peifer_segmentsfile = file.path(data_bundle_profiles_path, paste0("peifer/segments/", samplename, "_segments.txt"))
+  peifer_purityfile = file.path(data_bundle_profiles_path, paste0("peifer/purity_ploidy.txt"))
+  #mustonen_segmentsfile = paste0("mustonen/", samplename, ".penalty0.95_segments.txt")
+  mustonen_segmentsfile = file.path(data_bundle_profiles_path, paste0("mustonen/segments/", samplename, "_segments.txt"))
+  mustonen_purityfile = file.path(data_bundle_profiles_path, paste0("mustonen/purity_ploidy.txt"))
+  jabba_segmentsfile = file.path(data_bundle_profiles_path, paste0("jabba/segments/", samplename, "_segments.txt"))
+  jabba_purityfile = file.path(data_bundle_profiles_path, paste0("jabba/purity_ploidy.txt"))
+  broad_segmentsfile = file.path(data_bundle_profiles_path, paste0("broad/segments/", samplename, "_segments.txt"))
+  broad_purityfile = file.path(data_bundle_profiles_path, paste0("broad/purity_ploidy.txt"))
+  vanloowedge_baflogrfile = file.path(data_bundle_profiles_path, paste0("vanloowedge/baflogr/", samplename, "_baflogr.txt"))
+  broad_baflogrfile = file.path(data_bundle_profiles_path, paste0("broad/baflogr/", samplename, "_baflogr.txt"))
   
   method_segmentsfile = list(dkfz=dkfz_segmentsfile,
                              vanloowedge=vanloowedge_segmentsfile,
@@ -680,12 +673,12 @@ if (file.exists(breakpoints_file)) {
   # Overrule methods
   #####################################################################
   # Calc ploidy of all profiles and overrule those that are not concordant
-  ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
-  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T)
-  ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
-  ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
-  ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
-  ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba)
+  ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge, libpath=libpath)
+  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, libpath=libpath, broad=T)
+  ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer, libpath=libpath)
+  ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz, libpath=libpath)
+  ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen, libpath=libpath)
+  ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba, libpath=libpath)
   
   expected_ploidy = read.table(expected_ploidy_file, header=T, stringsAsFactors=F)
   expected_ploidy = expected_ploidy[expected_ploidy$samplename==samplename, "ploidy"]
@@ -1012,7 +1005,7 @@ if (file.exists(breakpoints_file)) {
                                                all_data_clonal$map_vanloowedge_baflogr)
   
   print("Making figure input")
-  profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
+  profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile), libpath=libpath)
   print("Making figure")
   p = plot_profile(profile_bb, "Consensus - after rounding", max.plot.cn=max.plot.cn)
   png(file.path(outdir, "figures", paste0(samplename, "_consensus_rounded.png")), height=300, width=1300)
@@ -1270,7 +1263,7 @@ if (file.exists(breakpoints_file)) {
   }
   
   
-  cent = Battenberg::read_table_generic("centromere.txt", header=F)
+  cent = Battenberg::read_table_generic(file.path(libpath,"centromere.txt"), header=F)
   colnames(cent) = c("chr", "start", "end")
   cent.gr = GRanges(cent$chr, IRanges(cent$start, cent$end))
   consensus_profile.gr = GRanges(consensus_profile$chromosome, IRanges(consensus_profile$start, consensus_profile$end))
@@ -1298,7 +1291,7 @@ if (file.exists(breakpoints_file)) {
   write.table(consensus_profile, file=file.path(outdir, "consensus_profile", paste0(samplename, "_consensus_profile.txt")), quote=F, sep="\t", row.names=F)
   
   # TODO bugfix : Is creating the full data.frame here needed? it's done above already?
-  profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile))
+  profile_bb = collapseRoundedClonal2bb(data.frame(segments, consensus_profile), libpath=libpath)
   p = plot_profile(profile_bb, "Consensus - after rounding and using best method", max.plot.cn=max.plot.cn)
   png(file.path(outdir, "figures", paste0(samplename, "_consensus_rounded_bestMethod.png")), height=300, width=1300)
   print(p)
@@ -1322,12 +1315,12 @@ if (file.exists(breakpoints_file)) {
   
   purities_tested = test_purities(purities, consensus_profile)
   
-  ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge)
-  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T)
-  ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer)
-  ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz)
-  ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen)
-  ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba)
+  ploidy_vanloowedge = get_ploidy(segments, all_data_clonal$map_vanloowedge, libpath=libpath)
+  ploidy_broad = get_ploidy(segments, all_data_clonal$map_broad, broad=T, libpath=libpath)
+  ploidy_peifer = get_ploidy(segments, all_data_clonal$map_peifer, libpath=libpath)
+  ploidy_dkfz = get_ploidy(segments, all_data_clonal$map_dkfz, libpath=libpath)
+  ploidy_mustonen = get_ploidy(segments, all_data_clonal$map_mustonen, libpath=libpath)
+  ploidy_jabba = get_ploidy(segments, all_data_clonal$map_jabba, libpath=libpath)
   ploidy_consensus = round(calc_ploidy(profile_bb), 4)
   
   ploidies = data.frame(ploidy_vanloowedge=ploidy_vanloowedge$ploidy, ploidy_broad=ploidy_broad$ploidy, ploidy_peifer=ploidy_peifer$ploidy, ploidy_dkfz=ploidy_dkfz$ploidy, ploidy_mustonen=ploidy_mustonen$ploidy, ploidy_jabba=ploidy_jabba$ploidy, ploidy_consensus=ploidy_consensus,
