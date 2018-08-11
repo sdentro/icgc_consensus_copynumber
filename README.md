@@ -45,26 +45,25 @@ This pipeline takes input data that has been bundled and is available [here](htt
 * Consensus breakpoints (established by the consensus breakpoints procedure available TODO)
 * Copy number profiles from the six methods with various annotations
 
-## Setup instructions - this is work in progress
+## Setup instructions
 
-Steps
+Steps to perform in the directory where the pipeline is to be run
 
 * download the data [bundle](https://www.synapse.org/#!Synapse:syn15426870)
-* run the setup_environment.sh script that:
-    * extract bundle
-    * mkdir output output/broad_rounded_clonal output/broad_rounded_alt_clonal output/consensus_profile output/consensus_profile_final output/dkfz_rounded_alt_clonal output/dkfz_rounded_clonal output/figures output/mustonen_rounded_alt_clonal output/mustonen_rounded_clonal output/pcawg11_consensus_profile output/peifer_rounded_alt_clonal output/peifer_rounded_clonal output/saves output/status_inventory output/summary_stats output/vanloowedge_rounded_alt_clonal output/vanloowedge_rounded_clonal output/raw_ploidy output/jabba_rounded_clonal output/jabba_rounded_alt_clonal
-* run the pipeline (TODO make a single bash script that runs all steps per sample)
+* extract the bundle
+* run `setup.sh` to create all the output directories
+* run the pipeline using `run.sh`
 
-## How to run the pipeline - work in progress
+## How to run the pipeline
 
 ```
-TODO - integrate the different steps into a single pipeline
+/path/to/code/run.sh /path/to/code/ [samplename]
 ```
 
 ## Produced output
 The pipeline produces two files for each sample:
 
-A file with the publically released PCAWG consensus copy number profile. It contains a row per copy number segment and with the following columns
+A file with the publically released PCAWG consensus copy number profile in `output/consensus_profile_final`. It contains a row per copy number segment and with the following columns
 
 | Column | Description |
 | --- | --- |
@@ -73,7 +72,7 @@ A file with the publically released PCAWG consensus copy number profile. It cont
 | total_cn, major_cn and minor_cn | The total copy number and the copy number of the major and minor allele respectively |
 | star | Quality rating where 3 represents the highest quality, 2 medium and 1 the lowest |
 
-A file with the internally released PCAWG-11 consensus copy number profile. The copy number is exactly the same as in the above file, but more columns have been added that provide information required for other analysis within PCAWG-11. It contains a row per copy number segment and with the following columns
+A file with the internally released PCAWG-11 consensus copy number profile in `output/pcawg11_consensus_profile`. The copy number is exactly the same as in the above file, but more columns have been added that provide information required for other analysis within PCAWG-11. It contains a row per copy number segment and with the following columns
 
 | Column | Description |
 | --- | --- |
