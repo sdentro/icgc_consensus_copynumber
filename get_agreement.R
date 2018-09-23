@@ -647,7 +647,7 @@ if (file.exists(breakpoints_file)) {
   jabba_purityfile = file.path(data_bundle_profiles_path, paste0("jabba/purity_ploidy.txt"))
   broad_segmentsfile = file.path(data_bundle_profiles_path, paste0("broad/segments/", samplename, "_segments.txt"))
   broad_purityfile = file.path(data_bundle_profiles_path, paste0("broad/purity_ploidy.txt"))
-  vanloowedge_baflogrfile = file.path(data_bundle_profiles_path, paste0("vanloowedge/baflogr/", samplename, "_baflogr.txt"))
+  vanloowedge_baflogrfile = file.path(data_bundle_profiles_path, paste0("vanloo_wedge/baflogr/", samplename, "_baflogr.txt"))
   broad_baflogrfile = file.path(data_bundle_profiles_path, paste0("broad/baflogr/", samplename, "_baflogr.txt"))
   
   method_segmentsfile = list(dkfz=dkfz_segmentsfile,
